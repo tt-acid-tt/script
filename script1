@@ -1,0 +1,926 @@
+-- Services
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+local mouse = player:GetMouse()
+
+-- Удаляем старый GUI
+if CoreGui:FindFirstChild("SlapBattlesAntiVoidGUI") then
+    CoreGui.SlapBattlesAntiVoidGUI:Destroy()
+end
+
+-- Создание главного контейнера
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "SlapBattlesAntiVoidGUI"
+ScreenGui.ResetOnSpawn = false
+local success, err = pcall(function()
+    ScreenGui.Parent = CoreGui
+end)
+if not success then
+    ScreenGui.Parent = player:WaitForChild("PlayerGui")
+end
+
+-- ЭКРАН ЗАГРУЗКИ (Splash Screen)
+local LoadingFrame = Instance.new("Frame")
+LoadingFrame.Name = "LoadingFrame"
+LoadingFrame.Parent = ScreenGui
+LoadingFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
+LoadingFrame.BorderSizePixel = 0
+LoadingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+LoadingFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+LoadingFrame.Size = UDim2.new(0, 260, 0, 110)
+LoadingFrame.BackgroundTransparency = 1
+
+local LoadingCorner = Instance.new("UICorner")
+LoadingCorner.CornerRadius = UDim.new(0, 14)
+LoadingCorner.Parent = LoadingFrame
+
+local LoadingTitle = Instance.new("TextLabel")
+LoadingTitle.Parent = LoadingFrame
+LoadingTitle.BackgroundTransparency = 1
+LoadingTitle.Position = UDim2.new(0, 0, 0, 18)
+LoadingTitle.Size = UDim2.new(1, 0, 0, 24)
+LoadingTitle.Font = Enum.Font.GothamBold
+LoadingTitle.Text = "⚡ Slap Battles Hub"
+LoadingTitle.TextColor3 = Color3.fromRGB(240, 240, 255)
+LoadingTitle.TextSize = 16
+LoadingTitle.TextTransparency = 1
+
+local LoadingSub = Instance.new("TextLabel")
+LoadingSub.Parent = LoadingFrame
+LoadingSub.BackgroundTransparency = 1
+LoadingSub.Position = UDim2.new(0, 0, 0, 44)
+LoadingSub.Size = UDim2.new(1, 0, 0, 18)
+LoadingSub.Font = Enum.Font.Gotham
+LoadingSub.Text = "Загрузка компонентов..."
+LoadingSub.TextColor3 = Color3.fromRGB(150, 150, 170)
+LoadingSub.TextSize = 11
+LoadingSub.TextTransparency = 1
+
+local BarBackground = Instance.new("Frame")
+BarBackground.Parent = LoadingFrame
+BarBackground.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
+BarBackground.BorderSizePixel = 0
+BarBackground.Position = UDim2.new(0.5, -110, 0, 75)
+BarBackground.Size = UDim2.new(0, 220, 0, 6)
+BarBackground.BackgroundTransparency = 1
+
+local BarBgCorner = Instance.new("UICorner")
+BarBgCorner.CornerRadius = UDim.new(1, 0)
+BarBgCorner.Parent = BarBackground
+
+local BarFill = Instance.new("Frame")
+BarFill.Parent = BarBackground
+BarFill.BackgroundColor3 = Color3.fromRGB(80, 130, 255)
+BarFill.BorderSizePixel = 0
+BarFill.Size = UDim2.new(0, 0, 1, 0)
+
+local BarFillCorner = Instance.new("UICorner")
+BarFillCorner.CornerRadius = UDim.new(1, 0)
+BarFillCorner.Parent = BarFill
+
+-- ОСНОВНОЙ ИНТЕРФЕЙС (увеличена высота для нового поля)
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+MainFrame.BorderSizePixel = 0
+MainFrame.Position = UDim2.new(0.5, -115, 0.12, 0)
+MainFrame.Size = UDim2.new(0, 230, 0, 480)
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.ClipsDescendants = true
+MainFrame.Visible = false
+MainFrame.BackgroundTransparency = 1
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 14)
+UICorner.Parent = MainFrame
+
+-- Анимация появления загрузчика
+TweenService:Create(LoadingFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.1}):Play()
+TweenService:Create(LoadingTitle, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
+TweenService:Create(LoadingSub, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
+TweenService:Create(BarBackground, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0}):Play()
+
+task.delay(0.3, function()
+    TweenService:Create(BarFill, TweenInfo.new(0.6, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size = UDim2.new(0.6, 0, 1, 0)}):Play()
+    LoadingSub.Text = "Подключение модулей..."
+end)
+
+task.delay(1.0, function()
+    TweenService:Create(BarFill, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 1, 0)}):Play()
+    LoadingSub.Text = "Готово!"
+end)
+
+task.delay(1.6, function()
+    TweenService:Create(LoadingFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(LoadingTitle, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {TextTransparency = 1}):Play()
+    TweenService:Create(LoadingSub, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {TextTransparency = 1}):Play()
+    TweenService:Create(BarBackground, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(BarFill, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1}):Play()
+    
+    task.wait(0.3)
+    LoadingFrame:Destroy()
+
+    MainFrame.Visible = true
+    TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {BackgroundTransparency = 0}):Play()
+end)
+
+-- Заголовок
+local Title = Instance.new("TextLabel")
+Title.Parent = MainFrame
+Title.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
+Title.Size = UDim2.new(1, 0, 0, 38)
+Title.Font = Enum.Font.GothamBold
+Title.Text = "  ⚡ Slap Battles Hub"
+Title.TextColor3 = Color3.fromRGB(240, 240, 255)
+Title.TextSize = 13
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.ZIndex = 3
+
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 14)
+TitleCorner.Parent = Title
+
+local FixCorner = Instance.new("Frame")
+FixCorner.Parent = Title
+FixCorner.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
+FixCorner.BorderSizePixel = 0
+FixCorner.Position = UDim2.new(0, 0, 1, -8)
+FixCorner.Size = UDim2.new(1, 0, 0, 8)
+FixCorner.ZIndex = 2
+
+local function fadeOutRecursive(parent, duration)
+    for _, child in ipairs(parent:GetDescendants()) do
+        if child:IsA("TextButton") or child:IsA("TextLabel") or child:IsA("TextBox") then
+            TweenService:Create(child, TweenInfo.new(duration), {
+                TextTransparency = 1,
+                BackgroundTransparency = 1
+            }):Play()
+        elseif child:IsA("ImageLabel") then
+            TweenService:Create(child, TweenInfo.new(duration), {
+                ImageTransparency = 1,
+                BackgroundTransparency = 1
+            }):Play()
+        elseif child:IsA("Frame") then
+            TweenService:Create(child, TweenInfo.new(duration), {
+                BackgroundTransparency = 1
+            }):Play()
+        end
+    end
+end
+
+-- Кнопка закрытия
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Parent = Title
+CloseBtn.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
+CloseBtn.BorderSizePixel = 0
+CloseBtn.Position = UDim2.new(1, -30, 0.5, -11)
+CloseBtn.Size = UDim2.new(0, 22, 0, 22)
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.Text = "×"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 14
+CloseBtn.ZIndex = 4
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 6)
+CloseCorner.Parent = CloseBtn
+
+CloseBtn.MouseButton1Click:Connect(function()
+    fadeOutRecursive(MainFrame, 0.35)
+    TweenService:Create(MainFrame, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        BackgroundTransparency = 1,
+        Size = UDim2.new(0, 200, 0, 200),
+        Position = MainFrame.Position + UDim2.new(0, 15, 0, 15)
+    }):Play()
+    
+    task.wait(0.35)
+    ScreenGui:Destroy()
+end)
+
+-- Кнопка сворачивания (-)
+local MinimizeBtn = Instance.new("TextButton")
+MinimizeBtn.Parent = Title
+MinimizeBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+MinimizeBtn.BorderSizePixel = 0
+MinimizeBtn.Position = UDim2.new(1, -56, 0.5, -11)
+MinimizeBtn.Size = UDim2.new(0, 22, 0, 22)
+MinimizeBtn.Font = Enum.Font.GothamBold
+MinimizeBtn.Text = "-"
+MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeBtn.TextSize = 14
+MinimizeBtn.ZIndex = 4
+
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(0, 6)
+MinCorner.Parent = MinimizeBtn
+
+local isAnimating = false
+
+local function applyButtonEffects(btn, baseColor, originalSize, hoverSize, clickSize)
+    local tweenInfoHover = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local tweenInfoClick = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+    for _, child in ipairs(btn.Parent:GetChildren()) do
+        if child.Name == "NeonGlow_" .. btn.Name then
+            child:Destroy()
+        end
+    end
+
+    local glow = Instance.new("ImageLabel")
+    glow.Name = "NeonGlow_" .. btn.Name
+    glow.Parent = btn.Parent
+    glow.BackgroundTransparency = 1
+    glow.Image = "rbxassetid://6014261993"
+    glow.ImageColor3 = baseColor
+    glow.ImageTransparency = btn.BackgroundTransparency == 1 and 1 or 0.4
+    glow.ScaleType = Enum.ScaleType.Slice
+    glow.SliceCenter = Rect.new(49, 49, 450, 450)
+    
+    local glowPadding = 22
+    glow.Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset + glowPadding * 2, originalSize.Y.Scale, originalSize.Y.Offset + glowPadding * 2)
+    glow.Position = UDim2.new(0.5, -(originalSize.X.Offset + glowPadding * 2) / 2, btn.Position.Y.Scale, btn.Position.Y.Offset - glowPadding)
+    glow.ZIndex = btn.ZIndex - 1
+
+    local currentBtnTween, currentGlowTween
+
+    btn:GetPropertyChangedSignal("BackgroundTransparency"):Connect(function()
+        if btn.BackgroundTransparency == 1 then
+            glow.ImageTransparency = 1
+        end
+    end)
+
+    btn:GetPropertyChangedSignal("Position"):Connect(function()
+        glow.Position = UDim2.new(0.5, -(glow.AbsoluteSize.X) / 2, btn.Position.Y.Scale, btn.Position.Y.Offset - glowPadding)
+    end)
+
+    local function getRealBaseColor()
+        return btn:GetAttribute("BaseColor") or baseColor
+    end
+
+    btn.MouseEnter:Connect(function()
+        if isAnimating or btn.BackgroundTransparency > 0.5 then return end
+
+        if currentBtnTween then currentBtnTween:Cancel() end
+        if currentGlowTween then currentGlowTween:Cancel() end
+
+        local realBase = getRealBaseColor()
+        local hoverColor = Color3.new(
+            math.min(realBase.R + 0.1, 1),
+            math.min(realBase.G + 0.1, 1),
+            math.min(realBase.B + 0.1, 1)
+        )
+
+        currentBtnTween = TweenService:Create(btn, tweenInfoHover, {
+            Size = hoverSize,
+            Position = UDim2.new(0.5, -hoverSize.X.Offset / 2, btn.Position.Y.Scale, btn.Position.Y.Offset),
+            BackgroundColor3 = hoverColor
+        })
+        currentBtnTween:Play()
+
+        currentGlowTween = TweenService:Create(glow, tweenInfoHover, {
+            Size = UDim2.new(0.0, hoverSize.X.Offset + glowPadding * 2 + 6, 0.0, hoverSize.Y.Offset + glowPadding * 2 + 6),
+            Position = UDim2.new(0.5, -(hoverSize.X.Offset + glowPadding * 2 + 6) / 2, btn.Position.Y.Scale, btn.Position.Y.Offset - glowPadding - 3),
+            ImageColor3 = hoverColor,
+            ImageTransparency = 0.25
+        })
+        currentGlowTween:Play()
+    end)
+
+    btn.MouseLeave:Connect(function()
+        if isAnimating or btn.BackgroundTransparency > 0.5 then return end
+
+        if currentBtnTween then currentBtnTween:Cancel() end
+        if currentGlowTween then currentGlowTween:Cancel() end
+
+        local realBase = getRealBaseColor()
+
+        currentBtnTween = TweenService:Create(btn, tweenInfoHover, {
+            Size = originalSize,
+            Position = UDim2.new(0.5, -originalSize.X.Offset / 2, btn.Position.Y.Scale, btn.Position.Y.Offset),
+            BackgroundColor3 = realBase
+        })
+        currentBtnTween:Play()
+
+        currentGlowTween = TweenService:Create(glow, tweenInfoHover, {
+            Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset + glowPadding * 2, originalSize.Y.Scale, originalSize.Y.Offset + glowPadding * 2),
+            Position = UDim2.new(0.5, -(originalSize.X.Offset + glowPadding * 2) / 2, btn.Position.Y.Scale, btn.Position.Y.Offset - glowPadding),
+            ImageColor3 = realBase,
+            ImageTransparency = 0.4
+        })
+        currentGlowTween:Play()
+    end)
+
+    btn.MouseButton1Down:Connect(function()
+        if isAnimating or btn.BackgroundTransparency > 0.5 then return end
+        if currentBtnTween then currentBtnTween:Cancel() end
+
+        currentBtnTween = TweenService:Create(btn, tweenInfoClick, {
+            Size = clickSize,
+            Position = UDim2.new(0.5, -clickSize.X.Offset / 2, btn.Position.Y.Scale, btn.Position.Y.Offset)
+        })
+        currentBtnTween:Play()
+    end)
+
+    btn.MouseButton1Up:Connect(function()
+        if isAnimating or btn.BackgroundTransparency > 0.5 then return end
+        if currentBtnTween then currentBtnTween:Cancel() end
+
+        currentBtnTween = TweenService:Create(btn, tweenInfoHover, {
+            Size = hoverSize,
+            Position = UDim2.new(0.5, -hoverSize.X.Offset / 2, btn.Position.Y.Scale, btn.Position.Y.Offset)
+        })
+        currentBtnTween:Play()
+    end)
+
+    return glow
+end
+
+local function createButton(name, posY, height, color)
+    local btn = Instance.new("TextButton")
+    btn.Name = name
+    btn.Parent = MainFrame
+    btn.BackgroundColor3 = color
+    btn.BorderSizePixel = 0
+    btn.ZIndex = 2
+    
+    btn:SetAttribute("BaseColor", color)
+    
+    local origSize = UDim2.new(0, 184, 0, height)
+    local hoverSize = UDim2.new(0, 194, 0, height + 4)
+    local clickSize = UDim2.new(0, 176, 0, height - 3)
+    
+    btn.Position = UDim2.new(0.5, -origSize.X.Offset / 2, 0, posY)
+    btn.Size = origSize
+    btn.Font = Enum.Font.GothamBold
+    btn.Text = name
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 12
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = btn
+    
+    applyButtonEffects(btn, color, origSize, hoverSize, clickSize)
+    
+    return btn
+end
+
+-- Основные кнопки интерфейса
+local ToggleBtn = createButton("Anti-Void: OFF", 52, 30, Color3.fromRGB(200, 50, 50))
+local TpBtn = createButton("Click-TP: OFF", 88, 30, Color3.fromRGB(50, 130, 220))
+local HitboxToggle = createButton("Glove Hitbox: OFF", 124, 30, Color3.fromRGB(200, 50, 50))
+
+-- Функция создания ползунка (slider)
+local function createSlider(posY, labelText, minVal, maxVal, defaultVal, callback)
+    local frame = Instance.new("Frame")
+    frame.Parent = MainFrame
+    frame.BackgroundColor3 = Color3.fromRGB(28, 28, 40)
+    frame.BorderSizePixel = 0
+    frame.Position = UDim2.new(0.5, -92, 0, posY)
+    frame.Size = UDim2.new(0, 184, 0, 38)
+    frame.ZIndex = 2
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = frame
+
+    local label = Instance.new("TextLabel")
+    label.Parent = frame
+    label.BackgroundTransparency = 1
+    label.Position = UDim2.new(0, 10, 0, 3)
+    label.Size = UDim2.new(1, -20, 0, 14)
+    label.Font = Enum.Font.Gotham
+    label.Text = labelText .. ": " .. tostring(defaultVal)
+    label.TextColor3 = Color3.fromRGB(180, 180, 200)
+    label.TextSize = 10
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 3
+
+    local track = Instance.new("Frame")
+    track.Parent = frame
+    track.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
+    track.BorderSizePixel = 0
+    track.Position = UDim2.new(0, 10, 0, 23)
+    track.Size = UDim2.new(1, -20, 0, 5)
+    track.ZIndex = 3
+
+    local trackCorner = Instance.new("UICorner")
+    trackCorner.CornerRadius = UDim.new(1, 0)
+    trackCorner.Parent = track
+
+    local fill = Instance.new("Frame")
+    fill.Parent = track
+    fill.BackgroundColor3 = Color3.fromRGB(80, 130, 255)
+    fill.BorderSizePixel = 0
+    local defaultPercent = (defaultVal - minVal) / (maxVal - minVal)
+    fill.Size = UDim2.new(defaultPercent, 0, 1, 0)
+    fill.ZIndex = 3
+
+    local fillCorner = Instance.new("UICorner")
+    fillCorner.CornerRadius = UDim.new(1, 0)
+    fillCorner.Parent = fill
+
+    local sliderBtn = Instance.new("TextButton")
+    sliderBtn.Parent = track
+    sliderBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    sliderBtn.BorderSizePixel = 0
+    sliderBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+    sliderBtn.Position = UDim2.new(defaultPercent, 0, 0.5, 0)
+    sliderBtn.Size = UDim2.new(0, 10, 0, 10)
+    sliderBtn.Text = ""
+    sliderBtn.ZIndex = 4
+
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(1, 0)
+    btnCorner.Parent = sliderBtn
+
+    local dragging = false
+    sliderBtn.MouseButton1Down:Connect(function()
+        dragging = true
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local mousePos = input.Position.X
+            local trackPos = track.AbsolutePosition.X
+            local trackSize = track.AbsoluteSize.X
+            
+            local relativeX = math.clamp((mousePos - trackPos) / trackSize, 0, 1)
+            
+            fill.Size = UDim2.new(relativeX, 0, 1, 0)
+            sliderBtn.Position = UDim2.new(relativeX, 0, 0.5, 0)
+            
+            local currentVal = minVal + (maxVal - minVal) * relativeX
+            currentVal = math.floor(currentVal * 10 + 0.5) / 10
+            
+            label.Text = labelText .. ": " .. tostring(currentVal)
+            callback(currentVal)
+        end
+    end)
+
+    return frame
+end
+
+-- Переменные хитбоксов
+local hitboxTransparency = 0.5
+local hitboxSizeX = 5
+local hitboxSizeY = 5
+local hitboxSizeZ = 5
+local glovesCount = 1 -- Количество перчаток для распределения
+
+createSlider(160, "Hitbox Size (X - Ширина)", 1, 50, 5, function(val)
+    hitboxSizeX = val
+end)
+
+createSlider(202, "Hitbox Size (Y - Высота)", 1, 50, 5, function(val)
+    hitboxSizeY = val
+end)
+
+createSlider(244, "Hitbox Size (Z - Глубина)", 1, 50, 5, function(val)
+    hitboxSizeZ = val
+end)
+
+createSlider(286, "Transparency", 0, 1, 0.5, function(val)
+    hitboxTransparency = val
+end)
+
+-- Новое поле ввода (TextBox) для количества перчаток
+local countFrame = Instance.new("Frame")
+countFrame.Parent = MainFrame
+countFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 40)
+countFrame.BorderSizePixel = 0
+countFrame.Position = UDim2.new(0.5, -92, 0, 328)
+countFrame.Size = UDim2.new(0, 184, 0, 30)
+countFrame.ZIndex = 2
+
+local countCorner = Instance.new("UICorner")
+countCorner.CornerRadius = UDim.new(0, 8)
+countCorner.Parent = countFrame
+
+local countLabel = Instance.new("TextLabel")
+countLabel.Parent = countFrame
+countLabel.BackgroundTransparency = 1
+countLabel.Position = UDim2.new(0, 10, 0, 0)
+countLabel.Size = UDim2.new(0.6, 0, 1, 0)
+countLabel.Font = Enum.Font.Gotham
+countLabel.Text = "Кол-во перчаток:"
+countLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
+countLabel.TextSize = 10
+countLabel.TextXAlignment = Enum.TextXAlignment.Left
+countLabel.ZIndex = 3
+
+local countBox = Instance.new("TextBox")
+countBox.Parent = countFrame
+countBox.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
+countBox.BorderSizePixel = 0
+countBox.Position = UDim2.new(1, -55, 0.5, -10)
+countBox.Size = UDim2.new(0, 45, 0, 20)
+countBox.Font = Enum.Font.GothamBold
+countBox.Text = "1"
+countBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+countBox.TextSize = 11
+countBox.ClearTextOnFocus = false
+countBox.ZIndex = 3
+
+local boxCorner = Instance.new("UICorner")
+boxCorner.CornerRadius = UDim.new(0, 5)
+boxCorner.Parent = countBox
+
+countBox.FocusLost:Connect(function()
+    local num = tonumber(countBox.Text)
+    if num then
+        glovesCount = math.clamp(math.floor(num), 1, 20)
+        countBox.Text = tostring(glovesCount)
+    else
+        countBox.Text = tostring(glovesCount)
+    end
+end)
+
+-- Выбор острова (смещен вниз из-за нового поля)
+local selectedIslandName = "Normal Arena"
+local DropdownToggle = createButton("Select Island v (" .. selectedIslandName .. ")", 368, 30, Color3.fromRGB(70, 70, 95))
+
+local IslandsContainer = Instance.new("Frame")
+IslandsContainer.Parent = MainFrame
+IslandsContainer.BackgroundTransparency = 1
+IslandsContainer.Position = UDim2.new(0.5, -92, 0, 402)
+IslandsContainer.Size = UDim2.new(0, 184, 0, 0)
+IslandsContainer.ClipsDescendants = false
+IslandsContainer.ZIndex = 1
+
+local function createSubButton(name, posY, color)
+    local btn = Instance.new("TextButton")
+    btn.Name = name
+    btn.Parent = IslandsContainer
+    btn.BackgroundColor3 = color
+    btn.BorderSizePixel = 0
+    btn.ZIndex = 2
+    
+    btn:SetAttribute("BaseColor", color)
+    
+    local origSize = UDim2.new(0, 184, 0, 26)
+    local hoverSize = UDim2.new(0, 192, 0, 29)
+    local clickSize = UDim2.new(0, 176, 0, 23)
+    
+    btn.Position = UDim2.new(0, 0, 0, posY)
+    btn.Size = origSize
+    btn.Font = Enum.Font.GothamBold
+    btn.Text = name
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 11
+    btn.TextTransparency = 1
+    btn.BackgroundTransparency = 1
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+    
+    local glow = applyButtonEffects(btn, color, origSize, hoverSize, clickSize)
+    
+    return btn, glow
+end
+
+local Island1, Glow1 = createSubButton("Normal Arena", 0, Color3.fromRGB(80, 80, 110))
+local Island2, Glow2 = createSubButton("Moai Island", 0, Color3.fromRGB(80, 80, 110))
+local Island3, Glow3 = createSubButton("Slapple Island", 0, Color3.fromRGB(80, 80, 110))
+local Island4, Glow4 = createSubButton("Cannon Island", 0, Color3.fromRGB(80, 80, 110))
+
+local subItems = {
+    {btn = Island1, glow = Glow1},
+    {btn = Island2, glow = Glow2},
+    {btn = Island3, glow = Glow3},
+    {btn = Island4, glow = Glow4},
+}
+
+local GoBtn = createButton("Teleport to Island", 404, 30, Color3.fromRGB(50, 170, 50))
+
+-- Логика сворачивания
+local isMinimized = false
+MinimizeBtn.MouseButton1Click:Connect(function()
+    if isAnimating then return end
+    isMinimized = not isMinimized
+    
+    if isMinimized and dropdownOpen then
+        dropdownOpen = false
+        DropdownToggle.Text = "Select Island v (" .. selectedIslandName .. ")"
+        IslandsContainer.Size = UDim2.new(0, 184, 0, 0)
+        for _, item in ipairs(subItems) do
+            item.btn.BackgroundTransparency = 1
+            item.btn.TextTransparency = 1
+            item.glow.ImageTransparency = 1
+        end
+    end
+
+    if isMinimized then
+        MinimizeBtn.Text = "+"
+        TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 230, 0, 38)}):Play()
+    else
+        MinimizeBtn.Text = "-"
+        local targetSize = dropdownOpen and UDim2.new(0, 230, 0, 560) or UDim2.new(0, 230, 0, 480)
+        TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 230, 0, targetSize.Y.Offset)}):Play()
+    end
+end)
+
+local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+local closeTweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+
+local dropdownOpen = false
+local selectedPosition = Vector3.new(0, 15, 0)
+
+DropdownToggle.MouseButton1Click:Connect(function()
+    if isAnimating or isMinimized then return end
+    isAnimating = true
+    dropdownOpen = not dropdownOpen
+    
+    if dropdownOpen then
+        DropdownToggle.Text = "Select Island ^ (" .. selectedIslandName .. ")"
+        
+        TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 230, 0, 600)}):Play()
+        TweenService:Create(IslandsContainer, tweenInfo, {Size = UDim2.new(0, 184, 0, 120)}):Play()
+        TweenService:Create(GoBtn, tweenInfo, {Position = UDim2.new(0.5, -92, 0, 536)}):Play()
+        
+        local targetY = {0, 30, 60, 90}
+        
+        for i, item in ipairs(subItems) do
+            item.btn.Visible = true
+            TweenService:Create(item.btn, tweenInfo, {
+                Position = UDim2.new(0, 0, 0, targetY[i]),
+                BackgroundTransparency = 0,
+                TextTransparency = 0
+            }):Play()
+            
+            TweenService:Create(item.glow, tweenInfo, {
+                ImageTransparency = 0.4
+            }):Play()
+        end
+        
+        task.delay(0.3, function() isAnimating = false end)
+    else
+        DropdownToggle.Text = "Select Island v (" .. selectedIslandName .. ")"
+        
+        TweenService:Create(MainFrame, closeTweenInfo, {Size = UDim2.new(0, 230, 0, 480)}):Play()
+        TweenService:Create(IslandsContainer, closeTweenInfo, {Size = UDim2.new(0, 184, 0, 0)}):Play()
+        TweenService:Create(GoBtn, closeTweenInfo, {Position = UDim2.new(0.5, -92, 0, 404)}):Play()
+        
+        for _, item in ipairs(subItems) do
+            local closeTweenBtn = TweenService:Create(item.btn, closeTweenInfo, {
+                Position = UDim2.new(0, 0, 0, 0),
+                BackgroundTransparency = 1,
+                TextTransparency = 1
+            })
+            closeTweenBtn:Play()
+            
+            local closeTweenGlow = TweenService:Create(item.glow, closeTweenInfo, {
+                ImageTransparency = 1
+            })
+            closeTweenGlow:Play()
+        end
+        
+        task.delay(0.2, function() isAnimating = false end)
+    end
+end)
+
+local function selectIsland(name, pos)
+    if isAnimating then return end
+    isAnimating = true
+    selectedIslandName = name
+    selectedPosition = pos
+    dropdownOpen = false
+    DropdownToggle.Text = "Select Island v (" .. selectedIslandName .. ")"
+    
+    TweenService:Create(MainFrame, closeTweenInfo, {Size = UDim2.new(0, 230, 0, 480)}):Play()
+    TweenService:Create(IslandsContainer, closeTweenInfo, {Size = UDim2.new(0, 184, 0, 0)}):Play()
+    TweenService:Create(GoBtn, closeTweenInfo, {Position = UDim2.new(0.5, -92, 0, 404)}):Play()
+    
+    for _, item in ipairs(subItems) do
+        local closeTweenBtn = TweenService:Create(item.btn, closeTweenInfo, {
+            Position = UDim2.new(0, 0, 0, 0),
+            BackgroundTransparency = 1,
+            TextTransparency = 1,
+            Size = UDim2.new(0, 184, 0, 26),
+            BackgroundColor3 = item.btn:GetAttribute("BaseColor") or Color3.fromRGB(80, 80, 110)
+        })
+        closeTweenBtn:Play()
+        
+        local closeTweenGlow = TweenService:Create(item.glow, closeTweenInfo, {
+            ImageTransparency = 1,
+            Size = UDim2.new(0, 184 + 44, 0, 26 + 44),
+            ImageColor3 = item.btn:GetAttribute("BaseColor") or Color3.fromRGB(80, 80, 110)
+        })
+        closeTweenGlow:Play()
+    end
+    
+    task.delay(0.2, function() isAnimating = false end)
+end
+
+Island1.MouseButton1Click:Connect(function() selectIsland("Normal Arena", Vector3.new(0, 15, 0)) end)
+Island2.MouseButton1Click:Connect(function() selectIsland("Moai Island", Vector3.new(215, 40, 0)) end)
+Island3.MouseButton1Click:Connect(function() selectIsland("Slapple Island", Vector3.new(-400, 50, 0)) end)
+Island4.MouseButton1Click:Connect(function() selectIsland("Cannon Island", Vector3.new(330 - 50, 15, 250)) end)
+
+GoBtn.MouseButton1Click:Connect(function()
+    local char = player.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        char.HumanoidRootPart.CFrame = CFrame.new(selectedPosition)
+        char.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+    end
+end)
+
+-- Логика Анти-Войда
+local antiVoidActive = false
+local connection
+local safePlatform = nil
+
+local function getOrCreatePlatform()
+    if not safePlatform or not safePlatform.Parent then
+        safePlatform = Instance.new("Part")
+        safePlatform.Name = "AntiVoidPlatform"
+        safePlatform.Size = Vector3.new(2048, 10, 2048)
+        safePlatform.Position = Vector3.new(0, -15, 0)
+        safePlatform.Anchored = true
+        safePlatform.Transparency = 0.7
+        safePlatform.BrickColor = BrickColor.new("Really blue")
+        safePlatform.Parent = Workspace
+    end
+    return safePlatform
+end
+
+ToggleBtn.MouseButton1Click:Connect(function()
+    antiVoidActive = not antiVoidActive
+    
+    local newColor
+    if antiVoidActive then
+        ToggleBtn.Text = "Anti-Void: ON"
+        newColor = Color3.fromRGB(45, 180, 45)
+    else
+        ToggleBtn.Text = "Anti-Void: OFF"
+        newColor = Color3.fromRGB(200, 50, 50)
+    end
+    
+    ToggleBtn.BackgroundColor3 = newColor
+    ToggleBtn:SetAttribute("BaseColor", newColor)
+    
+    for _, child in ipairs(ToggleBtn.Parent:GetChildren()) do
+        if child:IsA("ImageLabel") and child.Name == "NeonGlow_" .. ToggleBtn.Name then
+            child.ImageColor3 = newColor
+        end
+    end
+    
+    if antiVoidActive then
+        local platform = getOrCreatePlatform()
+        platform.CanCollide = true
+        
+        connection = RunService.Heartbeat:Connect(function()
+            local char = player.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                local hrp = char.HumanoidRootPart
+                if hrp.Position.Y < -30 then
+                    hrp.CFrame = CFrame.new(0, 15, 0)
+                    hrp.Velocity = Vector3.new(0, 0, 0)
+                end
+            end
+        end)
+    else
+        if connection then
+            connection:Disconnect()
+            connection = nil
+        end
+        
+        if safePlatform then
+            safePlatform.CanCollide = false
+            safePlatform:Destroy()
+            safePlatform = nil
+        end
+    end
+end)
+
+-- Логика Телепорта по клику
+local tpActive = false
+local tpConnection = nil
+
+TpBtn.MouseButton1Click:Connect(function()
+    tpActive = not tpActive
+    
+    local newColor
+    if tpActive then
+        TpBtn.Text = "Click-TP: ON"
+        newColor = Color3.fromRGB(45, 180, 45)
+    else
+        TpBtn.Text = "Click-TP: OFF"
+        newColor = Color3.fromRGB(50, 130, 220)
+    end
+    
+    TpBtn.BackgroundColor3 = newColor
+    TpBtn:SetAttribute("BaseColor", newColor)
+    
+    for _, child in ipairs(TpBtn.Parent:GetChildren()) do
+        if child:IsA("ImageLabel") and child.Name == "NeonGlow_" .. TpBtn.Name then
+            child.ImageColor3 = newColor
+        end
+    end
+    
+    if tpActive then
+        tpConnection = mouse.Button1Down:Connect(function()
+            local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+            if isMobile or UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) or UserInputService:IsKeyDown(Enum.KeyCode.RightControl) then
+                if mouse.Target then
+                    local char = player.Character
+                    if char and char:FindFirstChild("HumanoidRootPart") then
+                        char.HumanoidRootPart.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0, 3, 0))
+                    end
+                end
+            end
+        end)
+    else
+        if tpConnection then
+            tpConnection:Disconnect()
+            tpConnection = nil
+        end
+    end
+end)
+
+-- Логика Хитбокса с распределением размеров на указанное количество "частей"
+local hitboxActive = false
+local hitboxConnection = nil
+local originalPartSizes = {}
+
+HitboxToggle.MouseButton1Click:Connect(function()
+    hitboxActive = not hitboxActive
+    
+    local newColor
+    if hitboxActive then
+        HitboxToggle.Text = "Glove Hitbox: ON"
+        newColor = Color3.fromRGB(45, 180, 45)
+    else
+        HitboxToggle.Text = "Glove Hitbox: OFF"
+        newColor = Color3.fromRGB(200, 50, 50)
+    end
+    
+    HitboxToggle.BackgroundColor3 = newColor
+    HitboxToggle:SetAttribute("BaseColor", newColor)
+    
+    for _, child in ipairs(HitboxToggle.Parent:GetChildren()) do
+        if child:IsA("ImageLabel") and child.Name == "NeonGlow_" .. HitboxToggle.Name then
+            child.ImageColor3 = newColor
+        end
+    end
+    
+    if hitboxActive then
+        originalPartSizes = {}
+        hitboxConnection = RunService.RenderStepped:Connect(function()
+            local char = player.Character
+            if char then
+                for _, part in ipairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") and (part.Name == "Handle" or part.Name == "Glove" or part.Name == "RightHand") then
+                        if not originalPartSizes[part] then
+                            originalPartSizes[part] = {
+                                Size = part.Size,
+                                Transparency = part.Transparency,
+                                CanCollide = part.CanCollide
+                            }
+                        end
+                        
+                        -- Делим общий размер на количество "перчаток", чтобы избежать рассинхрона хитбоксов
+                        local dividedX = hitboxSizeX / math.max(1, glovesCount)
+                        local dividedY = hitboxSizeY / math.max(1, glovesCount)
+                        local dividedZ = hitboxSizeZ / math.max(1, glovesCount)
+                        
+                        part.Size = Vector3.new(dividedX, dividedY, dividedZ)
+                        part.Transparency = hitboxTransparency
+                        part.CanCollide = false
+                        part.Massless = true
+                    end
+                end
+            end
+        end)
+    else
+        if hitboxConnection then
+            hitboxConnection:Disconnect()
+            hitboxConnection = nil
+        end
+        
+        -- Возвращаем деталям их стандартные размеры и свойства
+        for part, data in pairs(originalPartSizes) do
+            if part and part.Parent then
+                part.Size = data.Size
+                part.Transparency = data.Transparency
+                part.CanCollide = data.CanCollide
+            end
+        end
+        originalPartSizes = {}
+    end
+end)
