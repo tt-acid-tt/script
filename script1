@@ -9,6 +9,9 @@ local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
 
+-- Переменные состояний
+local antiKnockbackEnabled = false
+
 -- Удаляем старый GUI
 if CoreGui:FindFirstChild("SlapBattlesAntiVoidGUI") then
     CoreGui.SlapBattlesAntiVoidGUI:Destroy()
@@ -84,7 +87,7 @@ local BarFillCorner = Instance.new("UICorner")
 BarFillCorner.CornerRadius = UDim.new(1, 0)
 BarFillCorner.Parent = BarFill
 
--- ОСНОВНОЙ ИНТЕРФЕЙС (увеличена высота для нового поля)
+-- ОСНОВНОЙ ИНТЕРФЕЙС
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
@@ -378,6 +381,56 @@ local ToggleBtn = createButton("Anti-Void: OFF", 52, 30, Color3.fromRGB(200, 50,
 local TpBtn = createButton("Click-TP: OFF", 88, 30, Color3.fromRGB(50, 130, 220))
 local HitboxToggle = createButton("Glove Hitbox: OFF", 124, 30, Color3.fromRGB(200, 50, 50))
 
+-- НОВАЯ КНОПКА: Anti-Knockback
+local AntiKbToggle = createButton("Anti-KB: OFF", 160, 30, Color3.fromRGB(200, 50, 50))
+
+AntiKbToggle.MouseButton1Click:Connect(function()
+    antiKnockbackEnabled = not antiKnockbackEnabled
+    if antiKnockbackEnabled then
+        AntiKbToggle.Text = "Anti-KB: ON"
+        AntiKbToggle:SetAttribute("BaseColor", Color3.fromRGB(50, 200, 80))
+        AntiKbToggle.BackgroundColor3 = Color3.fromRGB(50, 200, 80)
+    else
+        AntiKbToggle.Text = "Anti-KB: OFF"
+        AntiKbToggle:SetAttribute("BaseColor", Color3.fromRGB(200, 50, 50))
+        AntiKbToggle.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    end
+end)
+
+-- ЛОГИКА ANTI-KNOCKBACK (Удаление физических сил от ударов)
+local function setupAntiKnockback(char)
+    if not char then return end
+    local hrp = char:WaitForChild("HumanoidRootPart", 5)
+    if not hrp then return end
+
+    local function checkAndDestroy(child)
+        if antiKnockbackEnabled then
+            if child:IsA("BodyVelocity") or child:IsA("LinearVelocity") or child:IsA("VectorForce") or child:IsA("BodyThrust") then
+                task.wait()
+                child:Destroy()
+            end
+        end
+    end
+
+    char.ChildAdded:Connect(checkAndDestroy)
+    hrp.ChildAdded:Connect(checkAndDestroy)
+end
+
+if player.Character then
+    setupAntiKnockback(player.Character)
+end
+player.CharacterAdded:Connect(setupAntiKnockback)
+
+-- Сброс аномально высокой скорости (дополнительная страховка)
+RunService.Heartbeat:Connect(function()
+    if antiKnockbackEnabled and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = player.Character.HumanoidRootPart
+        if hrp.AssemblyLinearVelocity.Magnitude > 45 then
+            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        end
+    end
+end)
+
 -- Функция создания ползунка (slider)
 local function createSlider(posY, labelText, minVal, maxVal, defaultVal, callback)
     local frame = Instance.new("Frame")
@@ -550,7 +603,7 @@ countBox.FocusLost:Connect(function()
     end
 end)
 
--- Выбор острова (смещен вниз из-за нового поля)
+-- Выбор острова
 local selectedIslandName = "Normal Arena"
 local DropdownToggle = createButton("Select Island v (" .. selectedIslandName .. ")", 368, 30, Color3.fromRGB(70, 70, 95))
 
@@ -608,6 +661,9 @@ local subItems = {
 
 local GoBtn = createButton("Teleport to Island", 404, 30, Color3.fromRGB(50, 170, 50))
 
+-- Кнопка Anti-Knockback
+local AntiKBBtn = createButton("Anti-KB: OFF", 444, 30, Color3.fromRGB(200, 50, 50))
+
 -- Логика сворачивания
 local isMinimized = false
 MinimizeBtn.MouseButton1Click:Connect(function()
@@ -630,7 +686,7 @@ MinimizeBtn.MouseButton1Click:Connect(function()
         TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 230, 0, 38)}):Play()
     else
         MinimizeBtn.Text = "-"
-        local targetSize = dropdownOpen and UDim2.new(0, 230, 0, 560) or UDim2.new(0, 230, 0, 480)
+        local targetSize = dropdownOpen and UDim2.new(0, 230, 0, 620) or UDim2.new(0, 230, 0, 520)
         TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 230, 0, targetSize.Y.Offset)}):Play()
     end
 end)
@@ -649,9 +705,10 @@ DropdownToggle.MouseButton1Click:Connect(function()
     if dropdownOpen then
         DropdownToggle.Text = "Select Island ^ (" .. selectedIslandName .. ")"
         
-        TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 230, 0, 600)}):Play()
+        TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 230, 0, 640)}):Play()
         TweenService:Create(IslandsContainer, tweenInfo, {Size = UDim2.new(0, 184, 0, 120)}):Play()
         TweenService:Create(GoBtn, tweenInfo, {Position = UDim2.new(0.5, -92, 0, 536)}):Play()
+        TweenService:Create(AntiKBBtn, tweenInfo, {Position = UDim2.new(0.5, -92, 0, 576)}):Play()
         
         local targetY = {0, 30, 60, 90}
         
@@ -672,9 +729,10 @@ DropdownToggle.MouseButton1Click:Connect(function()
     else
         DropdownToggle.Text = "Select Island v (" .. selectedIslandName .. ")"
         
-        TweenService:Create(MainFrame, closeTweenInfo, {Size = UDim2.new(0, 230, 0, 480)}):Play()
+        TweenService:Create(MainFrame, closeTweenInfo, {Size = UDim2.new(0, 230, 0, 520)}):Play()
         TweenService:Create(IslandsContainer, closeTweenInfo, {Size = UDim2.new(0, 184, 0, 0)}):Play()
         TweenService:Create(GoBtn, closeTweenInfo, {Position = UDim2.new(0.5, -92, 0, 404)}):Play()
+        TweenService:Create(AntiKBBtn, closeTweenInfo, {Position = UDim2.new(0.5, -92, 0, 444)}):Play()
         
         for _, item in ipairs(subItems) do
             local closeTweenBtn = TweenService:Create(item.btn, closeTweenInfo, {
@@ -702,9 +760,10 @@ local function selectIsland(name, pos)
     dropdownOpen = false
     DropdownToggle.Text = "Select Island v (" .. selectedIslandName .. ")"
     
-    TweenService:Create(MainFrame, closeTweenInfo, {Size = UDim2.new(0, 230, 0, 480)}):Play()
+    TweenService:Create(MainFrame, closeTweenInfo, {Size = UDim2.new(0, 230, 0, 520)}):Play()
     TweenService:Create(IslandsContainer, closeTweenInfo, {Size = UDim2.new(0, 184, 0, 0)}):Play()
     TweenService:Create(GoBtn, closeTweenInfo, {Position = UDim2.new(0.5, -92, 0, 404)}):Play()
+    TweenService:Create(AntiKBBtn, closeTweenInfo, {Position = UDim2.new(0.5, -92, 0, 444)}):Play()
     
     for _, item in ipairs(subItems) do
         local closeTweenBtn = TweenService:Create(item.btn, closeTweenInfo, {
@@ -737,6 +796,81 @@ GoBtn.MouseButton1Click:Connect(function()
     if char and char:FindFirstChild("HumanoidRootPart") then
         char.HumanoidRootPart.CFrame = CFrame.new(selectedPosition)
         char.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+    end
+end)
+
+-- Логика Анти-Кнокбэка (Anti-Knockback)
+local antiKBActive = false
+local antiKBConnection = nil
+local antiKBChildConnection = nil
+
+AntiKBBtn.MouseButton1Click:Connect(function()
+    antiKBActive = not antiKBActive
+    
+    local newColor
+    if antiKBActive then
+        AntiKBBtn.Text = "Anti-KB: ON"
+        newColor = Color3.fromRGB(45, 180, 45)
+    else
+        AntiKBBtn.Text = "Anti-KB: OFF"
+        newColor = Color3.fromRGB(200, 50, 50)
+    end
+    
+    AntiKBBtn.BackgroundColor3 = newColor
+    AntiKBBtn:SetAttribute("BaseColor", newColor)
+    
+    for _, child in ipairs(AntiKBBtn.Parent:GetChildren()) do
+        if child:IsA("ImageLabel") and child.Name == "NeonGlow_" .. AntiKBBtn.Name then
+            child.ImageColor3 = newColor
+        end
+    end
+    
+    if antiKBActive then
+        local function checkAndRemoveMovers(character)
+            if not character then return end
+            for _, obj in ipairs(character:GetDescendants()) do
+                if obj:IsA("BodyVelocity") or obj:IsA("BodyPosition") or obj:IsA("BodyThrust") or obj:IsA("LinearVelocity") or obj:IsA("VectorForce") then
+                    obj:Destroy()
+                end
+            end
+        end
+
+        local char = player.Character
+        if char then
+            checkAndRemoveMovers(char)
+            antiKBChildConnection = char.DescendantAdded:Connect(function(descendant)
+                if descendant:IsA("BodyVelocity") or descendant:IsA("BodyPosition") or descendant:IsA("BodyThrust") or descendant:IsA("LinearVelocity") or descendant:IsA("VectorForce") then
+                    task.defer(function()
+                        if descendant and descendant.Parent then
+                            descendant:Destroy()
+                        end
+                    end)
+                end
+            end)
+        end
+
+        antiKBConnection = RunService.Heartbeat:Connect(function()
+            local character = player.Character
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                local hrp = character.HumanoidRootPart
+                local velocity = hrp.AssemblyLinearVelocity
+                local horizontalVel = Vector3.new(velocity.X, 0, velocity.Z)
+                
+                -- Если горизональная скорость резко возрастает выше нормального бега (от удара)
+                if horizontalVel.Magnitude > 30 then
+                    hrp.AssemblyLinearVelocity = Vector3.new(0, velocity.Y, 0)
+                end
+            end
+        end)
+    else
+        if antiKBConnection then
+            antiKBConnection:Disconnect()
+            antiKBConnection = nil
+        end
+        if antiKBChildConnection then
+            antiKBChildConnection:Disconnect()
+            antiKBChildConnection = nil
+        end
     end
 end)
 
@@ -853,7 +987,7 @@ TpBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Логика Хитбокса с распределением размеров на указанное количество "частей"
+-- Логика Хитбокса
 local hitboxActive = false
 local hitboxConnection = nil
 local originalPartSizes = {}
@@ -894,7 +1028,6 @@ HitboxToggle.MouseButton1Click:Connect(function()
                             }
                         end
                         
-                        -- Делим общий размер на количество "перчаток", чтобы избежать рассинхрона хитбоксов
                         local dividedX = hitboxSizeX / math.max(1, glovesCount)
                         local dividedY = hitboxSizeY / math.max(1, glovesCount)
                         local dividedZ = hitboxSizeZ / math.max(1, glovesCount)
@@ -913,7 +1046,6 @@ HitboxToggle.MouseButton1Click:Connect(function()
             hitboxConnection = nil
         end
         
-        -- Возвращаем деталям их стандартные размеры и свойства
         for part, data in pairs(originalPartSizes) do
             if part and part.Parent then
                 part.Size = data.Size
