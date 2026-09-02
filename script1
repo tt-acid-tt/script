@@ -1,2143 +1,1069 @@
 --// =========================================================
---// SLAP BATTLES HUB
---// Anti-Void / Click-TP / Glove Hitbox / Anti-KB
---// Roblox LocalScript
+--// SLAP BATTLES HUB + FLY MENU
+--// Исправленная версия
 --// =========================================================
 
---// SERVICES
 local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local SoundService = game:GetService("SoundService")
 
 local player = Players.LocalPlayer
-local mouse = player:GetMouse()
 local playerGui = player:WaitForChild("PlayerGui")
 
---// =========================================================
---// УДАЛЕНИЕ СТАРОГО GUI
---// =========================================================
+local MAIN_URL = "https://raw.githubusercontent.com/tt-acid-tt/script/main/script1"
 
-local oldGui = playerGui:FindFirstChild("SlapBattlesAntiVoidGUI")
+--=========================================================
+-- LOAD ORIGINAL HUB WITHOUT MODIFYING ITS STRUCTURE
+--=========================================================
 
-if oldGui then
-	oldGui:Destroy()
+local ok, err = pcall(function()
+    loadstring(game:HttpGet(MAIN_URL))()
+end)
+
+if not ok then
+    warn("[SLAP HUB] Failed to load script1:", err)
+    return
 end
 
---// =========================================================
---// GUI
---// =========================================================
+local mainGui
+for _ = 1, 100 do
+    mainGui = playerGui:FindFirstChild("SlapBattlesAntiVoidGUI")
+    if mainGui then break end
+    task.wait(0.05)
+end
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "SlapBattlesAntiVoidGUI"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.Parent = playerGui
+if not mainGui then
+    warn("[SLAP HUB] Main GUI not found")
+    return
+end
 
---// =========================================================
---// LOADING
---// =========================================================
+local MainFrame = mainGui:FindFirstChild("MainFrame", true)
+if not MainFrame then
+    warn("[SLAP HUB] MainFrame not found")
+    return
+end
 
-local LoadingFrame = Instance.new("Frame")
-LoadingFrame.Name = "LoadingFrame"
-LoadingFrame.Parent = ScreenGui
-LoadingFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
-LoadingFrame.BorderSizePixel = 0
-LoadingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-LoadingFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-LoadingFrame.Size = UDim2.new(0, 260, 0, 110)
-LoadingFrame.BackgroundTransparency = 1
+-- IMPORTANT:
+-- We do NOT reparent any existing objects.
+-- Therefore the original title, X and minimize buttons stay intact.
 
-local LoadingCorner = Instance.new("UICorner")
-LoadingCorner.CornerRadius = UDim.new(0, 14)
-LoadingCorner.Parent = LoadingFrame
-
-local LoadingTitle = Instance.new("TextLabel")
-LoadingTitle.Parent = LoadingFrame
-LoadingTitle.BackgroundTransparency = 1
-LoadingTitle.Position = UDim2.new(0, 0, 0, 18)
-LoadingTitle.Size = UDim2.new(1, 0, 0, 24)
-LoadingTitle.Font = Enum.Font.GothamBold
-LoadingTitle.Text = "⚡ Slap Battles Hub"
-LoadingTitle.TextColor3 = Color3.fromRGB(240, 240, 255)
-LoadingTitle.TextSize = 16
-LoadingTitle.TextTransparency = 1
-
-local LoadingSub = Instance.new("TextLabel")
-LoadingSub.Parent = LoadingFrame
-LoadingSub.BackgroundTransparency = 1
-LoadingSub.Position = UDim2.new(0, 0, 0, 44)
-LoadingSub.Size = UDim2.new(1, 0, 0, 18)
-LoadingSub.Font = Enum.Font.Gotham
-LoadingSub.Text = "Загрузка компонентов..."
-LoadingSub.TextColor3 = Color3.fromRGB(150, 150, 170)
-LoadingSub.TextSize = 11
-LoadingSub.TextTransparency = 1
-
-local BarBackground = Instance.new("Frame")
-BarBackground.Parent = LoadingFrame
-BarBackground.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
-BarBackground.BorderSizePixel = 0
-BarBackground.Position = UDim2.new(0.5, -110, 0, 75)
-BarBackground.Size = UDim2.new(0, 220, 0, 6)
-BarBackground.BackgroundTransparency = 1
-
-local BarBgCorner = Instance.new("UICorner")
-BarBgCorner.CornerRadius = UDim.new(1, 0)
-BarBgCorner.Parent = BarBackground
-
-local BarFill = Instance.new("Frame")
-BarFill.Parent = BarBackground
-BarFill.BackgroundColor3 = Color3.fromRGB(80, 130, 255)
-BarFill.BorderSizePixel = 0
-BarFill.Size = UDim2.new(0, 0, 1, 0)
-
-local BarFillCorner = Instance.new("UICorner")
-BarFillCorner.CornerRadius = UDim.new(1, 0)
-BarFillCorner.Parent = BarFill
-
---// =========================================================
---// MAIN FRAME
---// =========================================================
-
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
-MainFrame.BorderSizePixel = 0
-MainFrame.Position = UDim2.new(0.5, -115, 0.12, 0)
-MainFrame.Size = UDim2.new(0, 230, 0, 520)
-MainFrame.Active = true
-MainFrame.Draggable = true
 MainFrame.ClipsDescendants = true
-MainFrame.Visible = false
-MainFrame.BackgroundTransparency = 1
 
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 14)
-MainCorner.Parent = MainFrame
+--=========================================================
+-- CHARACTER
+--=========================================================
 
---// =========================================================
---// TITLE
---// =========================================================
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local rootPart = character:WaitForChild("HumanoidRootPart")
 
-local Title = Instance.new("TextLabel")
-Title.Parent = MainFrame
-Title.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
-Title.Size = UDim2.new(1, 0, 0, 38)
-Title.Font = Enum.Font.GothamBold
-Title.Text = "   ⚡ Slap Battles Hub"
-Title.TextColor3 = Color3.fromRGB(240, 240, 255)
-Title.TextSize = 13
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.ZIndex = 3
+player.CharacterAdded:Connect(function(newCharacter)
+    character = newCharacter
+    humanoid = character:WaitForChild("Humanoid")
+    rootPart = character:WaitForChild("HumanoidRootPart")
+end)
 
-local TitleCorner = Instance.new("UICorner")
-TitleCorner.CornerRadius = UDim.new(0, 14)
-TitleCorner.Parent = Title
+--=========================================================
+-- FLY STATE
+--=========================================================
 
-local FixCorner = Instance.new("Frame")
-FixCorner.Parent = Title
-FixCorner.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
-FixCorner.BorderSizePixel = 0
-FixCorner.Position = UDim2.new(0, 0, 1, -8)
-FixCorner.Size = UDim2.new(1, 0, 0, 8)
-FixCorner.ZIndex = 2
+local flyMenuOpen = false
+local flying = false
+local flyMinimized = false
 
---// =========================================================
---// VARIABLES
---// =========================================================
+local flySpeed = 50
+local flyKey = Enum.KeyCode.R
+local minimizeKey = Enum.KeyCode.K
 
-local isAnimating = false
-local isMinimized = false
+local bindingFly = false
+local bindingMinimize = false
 
-local antiVoidActive = false
-local tpActive = false
-local hitboxActive = false
-local antiKBActive = false
+local bodyVelocity
+local bodyGyro
 
-local antiVoidConnection
-local tpConnection
-local hitboxConnection
+--=========================================================
+-- REMOVE OLD FLY GUI
+--=========================================================
 
-local antiKBConnection
-local antiKBChildConnection
-local antiKBStateConnection
-local antiKBCharacterConnection
-
-local safePlatform
-
-local hitboxTransparency = 0.5
-local hitboxSizeX = 5
-local hitboxSizeY = 5
-local hitboxSizeZ = 5
-local glovesCount = 1
-
---// =========================================================
---// BUTTON EFFECTS
---// =========================================================
-
-local function applyButtonEffects(btn, baseColor, originalSize, hoverSize, clickSize)
-
-	local tweenInfoHover = TweenInfo.new(
-		0.25,
-		Enum.EasingStyle.Quad,
-		Enum.EasingDirection.Out
-	)
-
-	local tweenInfoClick = TweenInfo.new(
-		0.1,
-		Enum.EasingStyle.Quad,
-		Enum.EasingDirection.Out
-	)
-
-	local glow = Instance.new("ImageLabel")
-	glow.Name = "NeonGlow_" .. btn.Name
-	glow.Parent = btn.Parent
-	glow.BackgroundTransparency = 1
-	glow.Image = "rbxassetid://6014261993"
-	glow.ImageColor3 = baseColor
-	glow.ImageTransparency = 0.4
-	glow.ScaleType = Enum.ScaleType.Slice
-	glow.SliceCenter = Rect.new(49, 49, 450, 450)
-	glow.ZIndex = btn.ZIndex - 1
-
-	local glowPadding = 22
-
-	glow.Size = UDim2.new(
-		0,
-		originalSize.X.Offset + glowPadding * 2,
-		0,
-		originalSize.Y.Offset + glowPadding * 2
-	)
-
-	glow.Position = UDim2.new(
-		0.5,
-		-(originalSize.X.Offset + glowPadding * 2) / 2,
-		btn.Position.Y.Scale,
-		btn.Position.Y.Offset - glowPadding
-	)
-
-	local currentBtnTween
-	local currentGlowTween
-
-	local function getBaseColor()
-		return btn:GetAttribute("BaseColor") or baseColor
-	end
-
-	btn.MouseEnter:Connect(function()
-
-		if isAnimating then
-			return
-		end
-
-		if btn.BackgroundTransparency > 0.5 then
-			return
-		end
-
-		if currentBtnTween then
-			currentBtnTween:Cancel()
-		end
-
-		if currentGlowTween then
-			currentGlowTween:Cancel()
-		end
-
-		local realBase = getBaseColor()
-
-		local hoverColor = Color3.new(
-			math.min(realBase.R + 0.1, 1),
-			math.min(realBase.G + 0.1, 1),
-			math.min(realBase.B + 0.1, 1)
-		)
-
-		currentBtnTween = TweenService:Create(
-			btn,
-			tweenInfoHover,
-			{
-				Size = hoverSize,
-				Position = UDim2.new(
-					0.5,
-					-hoverSize.X.Offset / 2,
-					btn.Position.Y.Scale,
-					btn.Position.Y.Offset
-				),
-				BackgroundColor3 = hoverColor
-			}
-		)
-
-		currentBtnTween:Play()
-
-		currentGlowTween = TweenService:Create(
-			glow,
-			tweenInfoHover,
-			{
-				ImageColor3 = hoverColor,
-				ImageTransparency = 0.25
-			}
-		)
-
-		currentGlowTween:Play()
-	end)
-
-	btn.MouseLeave:Connect(function()
-
-		if isAnimating then
-			return
-		end
-
-		if btn.BackgroundTransparency > 0.5 then
-			return
-		end
-
-		if currentBtnTween then
-			currentBtnTween:Cancel()
-		end
-
-		if currentGlowTween then
-			currentGlowTween:Cancel()
-		end
-
-		local realBase = getBaseColor()
-
-		currentBtnTween = TweenService:Create(
-			btn,
-			tweenInfoHover,
-			{
-				Size = originalSize,
-				Position = UDim2.new(
-					0.5,
-					-originalSize.X.Offset / 2,
-					btn.Position.Y.Scale,
-					btn.Position.Y.Offset
-				),
-				BackgroundColor3 = realBase
-			}
-		)
-
-		currentBtnTween:Play()
-
-		currentGlowTween = TweenService:Create(
-			glow,
-			tweenInfoHover,
-			{
-				ImageColor3 = realBase,
-				ImageTransparency = 0.4
-			}
-		)
-
-		currentGlowTween:Play()
-	end)
-
-	btn.MouseButton1Down:Connect(function()
-
-		if isAnimating then
-			return
-		end
-
-		if btn.BackgroundTransparency > 0.5 then
-			return
-		end
-
-		if currentBtnTween then
-			currentBtnTween:Cancel()
-		end
-
-		currentBtnTween = TweenService:Create(
-			btn,
-			tweenInfoClick,
-			{
-				Size = clickSize,
-				Position = UDim2.new(
-					0.5,
-					-clickSize.X.Offset / 2,
-					btn.Position.Y.Scale,
-					btn.Position.Y.Offset
-				)
-			}
-		)
-
-		currentBtnTween:Play()
-	end)
-
-	btn.MouseButton1Up:Connect(function()
-
-		if isAnimating then
-			return
-		end
-
-		if btn.BackgroundTransparency > 0.5 then
-			return
-		end
-
-		if currentBtnTween then
-			currentBtnTween:Cancel()
-		end
-
-		currentBtnTween = TweenService:Create(
-			btn,
-			tweenInfoHover,
-			{
-				Size = hoverSize,
-				Position = UDim2.new(
-					0.5,
-					-hoverSize.X.Offset / 2,
-					btn.Position.Y.Scale,
-					btn.Position.Y.Offset
-				)
-			}
-		)
-
-		currentBtnTween:Play()
-	end)
-
-	return glow
+local oldFly = playerGui:FindFirstChild("FlyMenuGui")
+if oldFly then
+    local signal = oldFly:FindFirstChild("DestroySignal")
+    if signal and signal:IsA("BindableEvent") then
+        signal:Fire()
+    end
+    oldFly:Destroy()
 end
 
---// =========================================================
---// CREATE BUTTON
---// =========================================================
+--=========================================================
+-- SOUND
+--=========================================================
 
-local function createButton(name, posY, height, color)
+local clickSound = Instance.new("Sound")
+clickSound.Name = "FlyMenuClick"
+clickSound.SoundId = "rbxassetid://6895079853"
+clickSound.Volume = 0.5
+clickSound.Parent = SoundService
 
-	local btn = Instance.new("TextButton")
-
-	btn.Name = name
-	btn.Parent = MainFrame
-	btn.BackgroundColor3 = color
-	btn.BorderSizePixel = 0
-	btn.ZIndex = 2
-
-	btn:SetAttribute("BaseColor", color)
-
-	local originalSize = UDim2.new(0, 184, 0, height)
-	local hoverSize = UDim2.new(0, 194, 0, height + 4)
-	local clickSize = UDim2.new(0, 176, 0, height - 3)
-
-	btn.Position = UDim2.new(
-		0.5,
-		-originalSize.X.Offset / 2,
-		0,
-		posY
-	)
-
-	btn.Size = originalSize
-
-	btn.Font = Enum.Font.GothamBold
-	btn.Text = name
-	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-	btn.TextSize = 12
-
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 8)
-	corner.Parent = btn
-
-	applyButtonEffects(
-		btn,
-		color,
-		originalSize,
-		hoverSize,
-		clickSize
-	)
-
-	return btn
+local function click()
+    pcall(function()
+        clickSound:Play()
+    end)
 end
 
---// =========================================================
---// SLIDER
---// =========================================================
+--=========================================================
+-- MAIN HUB SCROLL
+--
+-- Existing objects are NOT moved to another parent.
+-- Only their visual Y position is shifted.
+-- Title / X / minimize remain fixed.
+--=========================================================
 
-local function createSlider(
-	posY,
-	labelText,
-	minVal,
-	maxVal,
-	defaultVal,
-	callback
+local scrollOffset = 0
+local maxScroll = 0
+
+local originalPositions = {}
+
+local function isFixedObject(obj)
+    if obj.Name == "Title" then
+        return true
+    end
+
+    if obj.Parent and obj.Parent.Name == "Title" then
+        return true
+    end
+
+    return false
+end
+
+local function rememberPositions()
+    for _, obj in ipairs(MainFrame:GetChildren()) do
+        if obj:IsA("GuiObject") and not isFixedObject(obj) then
+            if not originalPositions[obj] then
+                originalPositions[obj] = obj.Position
+            end
+        end
+    end
+end
+
+rememberPositions()
+
+local function applyScroll()
+    rememberPositions()
+
+    for obj, pos in pairs(originalPositions) do
+        if obj and obj.Parent == MainFrame and obj:IsA("GuiObject") then
+            obj.Position = UDim2.new(
+                pos.X.Scale,
+                pos.X.Offset,
+                pos.Y.Scale,
+                pos.Y.Offset - scrollOffset
+            )
+        end
+    end
+end
+
+local function setScroll(value)
+    scrollOffset = math.clamp(value, 0, maxScroll)
+    applyScroll()
+end
+
+-- Current original HUB content reaches roughly Y=476.
+-- This gives a small scroll area while keeping the original
+-- close/minimize/title untouched.
+maxScroll = 120
+
+MainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseWheel then
+        if flyMenuOpen then
+            -- scrolling still works; Fly GUI is independent
+        end
+
+        setScroll(scrollOffset - input.Position.Z * 45)
+    end
+end)
+
+--=========================================================
+-- FLY MENU BUTTON
+--=========================================================
+
+local flyMenuButton = Instance.new("TextButton")
+flyMenuButton.Name = "FlyMenuButton"
+flyMenuButton.Parent = MainFrame
+flyMenuButton.AnchorPoint = Vector2.new(0.5, 0)
+flyMenuButton.Size = UDim2.new(0, 184, 0, 30)
+flyMenuButton.Position = UDim2.new(0.5, 0, 0, 482)
+flyMenuButton.BackgroundColor3 = Color3.fromRGB(70, 70, 95)
+flyMenuButton.BorderSizePixel = 0
+flyMenuButton.Text = "FLY MENU"
+flyMenuButton.TextColor3 = Color3.fromRGB(240, 240, 250)
+flyMenuButton.TextSize = 11
+flyMenuButton.Font = Enum.Font.GothamBold
+flyMenuButton.AutoButtonColor = false
+flyMenuButton.ZIndex = 5
+
+local flyMenuCorner = Instance.new("UICorner")
+flyMenuCorner.CornerRadius = UDim.new(0, 8)
+flyMenuCorner.Parent = flyMenuButton
+
+local flyMenuStroke = Instance.new("UIStroke")
+flyMenuStroke.Color = Color3.fromRGB(95, 95, 125)
+flyMenuStroke.Thickness = 1
+flyMenuStroke.Parent = flyMenuButton
+
+--=========================================================
+-- ISLAND DROPDOWN + FLY BUTTON POSITION
+--=========================================================
+-- В оригинальном Hub кнопки островов находятся внутри
+-- IslandsContainer и при закрытии оставались невидимыми,
+-- но всё ещё могли перехватывать клики.
+-- Здесь они полностью отключаются, пока список закрыт.
+--
+-- Fly Menu остаётся дочерним объектом MainFrame, поэтому
+-- при раскрытии списка островов он уезжает вниз вместе
+-- с Teleport / Anti-KB.
+
+local islandContainer =
+    MainFrame:FindFirstChild("IslandsContainer")
+
+local islandDropdown =
+    MainFrame:FindFirstChild("DropdownToggle")
+
+local islandGoButton =
+    MainFrame:FindFirstChild("GoBtn")
+
+local islandAntiKBButton =
+    MainFrame:FindFirstChild("AntiKBBtn")
+
+local function setIslandButtonsEnabled(enabled)
+    if not islandContainer then
+        return
+    end
+
+    for _, obj in ipairs(islandContainer:GetChildren()) do
+        if obj:IsA("TextButton") then
+            obj.Active = enabled
+            obj.Selectable = enabled
+
+            if not enabled then
+                obj.Visible = false
+            else
+                obj.Visible = true
+            end
+        end
+    end
+end
+
+-- В закрытом состоянии они не существуют для ввода.
+setIslandButtonsEnabled(false)
+
+local function moveFlyButtonForIslandDropdown(open)
+    local targetY = open and 616 or 482
+
+    TweenService:Create(
+        flyMenuButton,
+        TweenInfo.new(
+            0.3,
+            Enum.EasingStyle.Back,
+            Enum.EasingDirection.Out
+        ),
+        {
+            Position = UDim2.new(
+                0.5,
+                -92,
+                0,
+                targetY
+            )
+        }
+    ):Play()
+end
+
+if islandDropdown then
+    islandDropdown.MouseButton1Click:Connect(function()
+        -- Оригинальный обработчик уже отработал раньше этого
+        -- обработчика, поэтому размер MainFrame уже показывает
+        -- новое состояние dropdown.
+        task.defer(function()
+            local opened =
+                MainFrame.Size.Y.Offset >= 600
+
+            setIslandButtonsEnabled(opened)
+            moveFlyButtonForIslandDropdown(opened)
+        end)
+    end)
+end
+
+flyMenuButton.MouseEnter:Connect(function()
+    TweenService:Create(
+        flyMenuButton,
+        TweenInfo.new(0.15),
+        {BackgroundColor3 = Color3.fromRGB(85, 85, 115)}
+    ):Play()
+end)
+
+flyMenuButton.MouseLeave:Connect(function()
+    TweenService:Create(
+        flyMenuButton,
+        TweenInfo.new(0.15),
+        {
+            BackgroundColor3 = flyMenuOpen
+                and Color3.fromRGB(40, 70, 48)
+                or Color3.fromRGB(70, 70, 95)
+        }
+    ):Play()
+end)
+
+--=========================================================
+-- FLY GUI
+--
+-- IMPORTANT: This is a separate ScreenGui.
+-- It is NOT inside MainFrame, so ClipsDescendants cannot hide it.
+--=========================================================
+
+local flyGui = Instance.new("ScreenGui")
+flyGui.Name = "FlyMenuGui"
+flyGui.ResetOnSpawn = false
+flyGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+flyGui.DisplayOrder = 100
+flyGui.Parent = playerGui
+
+local destroySignal = Instance.new("BindableEvent")
+destroySignal.Name = "DestroySignal"
+destroySignal.Parent = flyGui
+
+local flyFrame = Instance.new("Frame")
+flyFrame.Name = "FlyFrame"
+flyFrame.AnchorPoint = Vector2.new(0.5, 0)
+flyFrame.Size = UDim2.new(0, 230, 0, 202)
+flyFrame.Position = UDim2.new(0.5, 0, 0.55, 0)
+flyFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 25)
+flyFrame.BorderSizePixel = 0
+flyFrame.Visible = false
+flyFrame.Active = true
+flyFrame.ZIndex = 100
+flyFrame.Parent = flyGui
+
+local flyCorner = Instance.new("UICorner")
+flyCorner.CornerRadius = UDim.new(0, 12)
+flyCorner.Parent = flyFrame
+
+local flyStroke = Instance.new("UIStroke")
+flyStroke.Color = Color3.fromRGB(70, 70, 90)
+flyStroke.Thickness = 1.5
+flyStroke.Parent = flyFrame
+
+--=========================================================
+-- FLY TOP BAR
+--=========================================================
+
+local topBar = Instance.new("Frame")
+topBar.Size = UDim2.new(1, 0, 0, 34)
+topBar.BackgroundColor3 = Color3.fromRGB(30, 30, 42)
+topBar.BorderSizePixel = 0
+topBar.Active = true
+topBar.ZIndex = 101
+topBar.Parent = flyFrame
+
+local title = Instance.new("TextLabel")
+title.BackgroundTransparency = 1
+title.Position = UDim2.new(0, 12, 0, 0)
+title.Size = UDim2.new(1, -70, 1, 0)
+title.Text = "FLY MENU"
+title.TextColor3 = Color3.fromRGB(225, 225, 235)
+title.TextSize = 12
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.ZIndex = 102
+title.Parent = topBar
+
+local minimizeButton = Instance.new("TextButton")
+minimizeButton.Size = UDim2.new(0, 22, 0, 22)
+minimizeButton.Position = UDim2.new(1, -53, 0, 6)
+minimizeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+minimizeButton.BorderSizePixel = 0
+minimizeButton.Text = "-"
+minimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+minimizeButton.TextSize = 14
+minimizeButton.Font = Enum.Font.GothamBold
+minimizeButton.AutoButtonColor = false
+minimizeButton.ZIndex = 103
+minimizeButton.Parent = topBar
+
+local minCorner = Instance.new("UICorner")
+minCorner.CornerRadius = UDim.new(0, 6)
+minCorner.Parent = minimizeButton
+
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0, 22, 0, 22)
+closeButton.Position = UDim2.new(1, -27, 0, 6)
+closeButton.BackgroundColor3 = Color3.fromRGB(210, 60, 60)
+closeButton.BorderSizePixel = 0
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.TextSize = 11
+closeButton.Font = Enum.Font.GothamBold
+closeButton.AutoButtonColor = false
+closeButton.ZIndex = 103
+closeButton.Parent = topBar
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 6)
+closeCorner.Parent = closeButton
+
+--=========================================================
+-- FLY CONTENT
+--=========================================================
+
+local content = Instance.new("Frame")
+content.Size = UDim2.new(1, 0, 1, -34)
+content.Position = UDim2.new(0, 0, 0, 34)
+content.BackgroundTransparency = 1
+content.ZIndex = 101
+content.Parent = flyFrame
+
+local function createButton(text, y, height)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -24, 0, height)
+    btn.Position = UDim2.new(0, 12, 0, y)
+    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    btn.BorderSizePixel = 0
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(220, 220, 230)
+    btn.TextSize = 11
+    btn.Font = Enum.Font.GothamMedium
+    btn.AutoButtonColor = false
+    btn.ZIndex = 102
+    btn.Parent = content
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 7)
+    corner.Parent = btn
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(75, 75, 95)
+    stroke.Thickness = 1
+    stroke.Transparency = 0.35
+    stroke.Parent = btn
+
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(
+            btn,
+            TweenInfo.new(0.12),
+            {BackgroundColor3 = Color3.fromRGB(48, 48, 60)}
+        ):Play()
+    end)
+
+    btn.MouseLeave:Connect(function()
+        TweenService:Create(
+            btn,
+            TweenInfo.new(0.12),
+            {BackgroundColor3 = Color3.fromRGB(35, 35, 45)}
+        ):Play()
+    end)
+
+    return btn
+end
+
+local flyToggle = createButton("FLY: OFF", 6, 31)
+
+local speedInput = Instance.new("TextBox")
+speedInput.Size = UDim2.new(1, -24, 0, 29)
+speedInput.Position = UDim2.new(0, 12, 0, 42)
+speedInput.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
+speedInput.BorderSizePixel = 0
+speedInput.Text = "Speed: 50"
+speedInput.TextColor3 = Color3.fromRGB(205, 205, 215)
+speedInput.TextSize = 11
+speedInput.Font = Enum.Font.Gotham
+speedInput.ClearTextOnFocus = true
+speedInput.ZIndex = 102
+speedInput.Parent = content
+
+local speedCorner = Instance.new("UICorner")
+speedCorner.CornerRadius = UDim.new(0, 7)
+speedCorner.Parent = speedInput
+
+local flyBindButton = createButton("Fly Key: [ R ]", 78, 27)
+local minimizeBindButton = createButton("Minimize Key: [ K ]", 110, 27)
+
+local info = Instance.new("TextLabel")
+info.Size = UDim2.new(1, -24, 0, 22)
+info.Position = UDim2.new(0, 12, 0, 145)
+info.BackgroundTransparency = 1
+info.Text = "WASD • SPACE ↑ • SHIFT ↓"
+info.TextColor3 = Color3.fromRGB(120, 120, 140)
+info.TextSize = 9
+info.Font = Enum.Font.Gotham
+info.ZIndex = 102
+info.Parent = content
+
+--=========================================================
+-- FLY FUNCTIONS
+--=========================================================
+
+local function disableFly()
+    flying = false
+
+    flyToggle.Text = "FLY: OFF"
+    flyToggle.TextColor3 = Color3.fromRGB(220, 220, 230)
+    flyToggle.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+
+    if bodyVelocity then
+        bodyVelocity:Destroy()
+        bodyVelocity = nil
+    end
+
+    if bodyGyro then
+        bodyGyro:Destroy()
+        bodyGyro = nil
+    end
+
+    if humanoid then
+        humanoid.PlatformStand = false
+    end
+end
+
+local function enableFly()
+    if not flyMenuOpen then
+        return
+    end
+
+    if not rootPart or not rootPart.Parent or not humanoid then
+        return
+    end
+
+    flying = true
+
+    flyToggle.Text = "FLY: ON"
+    flyToggle.TextColor3 = Color3.fromRGB(100, 255, 140)
+    flyToggle.BackgroundColor3 = Color3.fromRGB(30, 55, 38)
+
+    bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.Name = "FlyBodyGyro"
+    bodyGyro.P = 90000
+    bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+    bodyGyro.CFrame = rootPart.CFrame
+    bodyGyro.Parent = rootPart
+
+    bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.Name = "FlyBodyVelocity"
+    bodyVelocity.Velocity = Vector3.zero
+    bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    bodyVelocity.Parent = rootPart
+
+    humanoid.PlatformStand = true
+end
+
+local function toggleFly()
+    if not flyMenuOpen then
+        return
+    end
+
+    click()
+
+    if flying then
+        disableFly()
+    else
+        enableFly()
+    end
+end
+
+--=========================================================
+-- FLY MENU OPEN / CLOSE ANIMATION
+--=========================================================
+
+local flyOpenPosition = UDim2.new(0.5, 0, 0.50, 0)
+local flyClosedPosition = UDim2.new(0.5, 0, 0.56, 0)
+
+local flyScale = Instance.new("UIScale")
+flyScale.Name = "FlyMenuScale"
+flyScale.Scale = 0.86
+flyScale.Parent = flyFrame
+
+local flyOpenInfo = TweenInfo.new(
+    0.38,
+    Enum.EasingStyle.Back,
+    Enum.EasingDirection.Out
 )
 
-	local frame = Instance.new("Frame")
-
-	frame.Parent = MainFrame
-	frame.BackgroundColor3 = Color3.fromRGB(28, 28, 40)
-	frame.BorderSizePixel = 0
-	frame.Position = UDim2.new(0.5, -92, 0, posY)
-	frame.Size = UDim2.new(0, 184, 0, 38)
-	frame.ZIndex = 2
-
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 8)
-	corner.Parent = frame
-
-	local label = Instance.new("TextLabel")
-
-	label.Parent = frame
-	label.BackgroundTransparency = 1
-	label.Position = UDim2.new(0, 10, 0, 3)
-	label.Size = UDim2.new(1, -20, 0, 14)
-	label.Font = Enum.Font.Gotham
-	label.Text = labelText .. ": " .. tostring(defaultVal)
-	label.TextColor3 = Color3.fromRGB(180, 180, 200)
-	label.TextSize = 10
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.ZIndex = 3
-
-	local track = Instance.new("Frame")
-
-	track.Parent = frame
-	track.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
-	track.BorderSizePixel = 0
-	track.Position = UDim2.new(0, 10, 0, 23)
-	track.Size = UDim2.new(1, -20, 0, 5)
-	track.ZIndex = 3
-
-	local trackCorner = Instance.new("UICorner")
-	trackCorner.CornerRadius = UDim.new(1, 0)
-	trackCorner.Parent = track
-
-	local defaultPercent =
-		(defaultVal - minVal) /
-		(maxVal - minVal)
-
-	local fill = Instance.new("Frame")
-
-	fill.Parent = track
-	fill.BackgroundColor3 = Color3.fromRGB(80, 130, 255)
-	fill.BorderSizePixel = 0
-	fill.Size = UDim2.new(defaultPercent, 0, 1, 0)
-	fill.ZIndex = 3
-
-	local fillCorner = Instance.new("UICorner")
-	fillCorner.CornerRadius = UDim.new(1, 0)
-	fillCorner.Parent = fill
-
-	local sliderBtn = Instance.new("TextButton")
-
-	sliderBtn.Parent = track
-	sliderBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	sliderBtn.BorderSizePixel = 0
-	sliderBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	sliderBtn.Position = UDim2.new(defaultPercent, 0, 0.5, 0)
-	sliderBtn.Size = UDim2.new(0, 10, 0, 10)
-	sliderBtn.Text = ""
-	sliderBtn.ZIndex = 4
-
-	local sliderCorner = Instance.new("UICorner")
-	sliderCorner.CornerRadius = UDim.new(1, 0)
-	sliderCorner.Parent = sliderBtn
-
-	local dragging = false
-
-	sliderBtn.MouseButton1Down:Connect(function()
-		dragging = true
-	end)
-
-	UserInputService.InputEnded:Connect(function(input)
-
-		if input.UserInputType == Enum.UserInputType.MouseButton1
-			or input.UserInputType == Enum.UserInputType.Touch then
-
-			dragging = false
-		end
-	end)
-
-	UserInputService.InputChanged:Connect(function(input)
-
-		if not dragging then
-			return
-		end
-
-		if input.UserInputType ~= Enum.UserInputType.MouseMovement
-			and input.UserInputType ~= Enum.UserInputType.Touch then
-
-			return
-		end
-
-		local mousePos = input.Position.X
-		local trackPos = track.AbsolutePosition.X
-		local trackSize = track.AbsoluteSize.X
-
-		local relativeX = math.clamp(
-			(mousePos - trackPos) / trackSize,
-			0,
-			1
-		)
-
-		fill.Size = UDim2.new(
-			relativeX,
-			0,
-			1,
-			0
-		)
-
-		sliderBtn.Position = UDim2.new(
-			relativeX,
-			0,
-			0.5,
-			0
-		)
-
-		local currentVal =
-			minVal +
-			(maxVal - minVal) *
-			relativeX
-
-		currentVal =
-			math.floor(currentVal * 10 + 0.5) / 10
-
-		label.Text =
-			labelText ..
-			": " ..
-			tostring(currentVal)
-
-		callback(currentVal)
-	end)
-
-	return frame
-end
-
---// =========================================================
---// TOP BUTTONS
---// =========================================================
-
-local ToggleBtn = createButton(
-	"Anti-Void: OFF",
-	52,
-	30,
-	Color3.fromRGB(200, 50, 50)
+local flyCloseInfo = TweenInfo.new(
+    0.24,
+    Enum.EasingStyle.Quint,
+    Enum.EasingDirection.In
 )
 
-local TpBtn = createButton(
-	"Click-TP: OFF",
-	88,
-	30,
-	Color3.fromRGB(50, 130, 220)
-)
+local function prepareFlyAnimation(opening)
+    local textTransparency = opening and 0 or 1
+    local strokeTransparency = opening and 0.25 or 1
 
-local HitboxToggle = createButton(
-	"Glove Hitbox: OFF",
-	124,
-	30,
-	Color3.fromRGB(200, 50, 50)
-)
+    TweenService:Create(
+        flyFrame,
+        opening and flyOpenInfo or flyCloseInfo,
+        {
+            BackgroundTransparency = opening and 0 or 1,
+            Position = opening and flyOpenPosition or flyClosedPosition
+        }
+    ):Play()
 
---// =========================================================
---// HITBOX SETTINGS
---// =========================================================
+    TweenService:Create(
+        flyScale,
+        opening and flyOpenInfo or flyCloseInfo,
+        {
+            Scale = opening and 1 or 0.86
+        }
+    ):Play()
 
-createSlider(
-	160,
-	"Hitbox Size (X - Ширина)",
-	1,
-	50,
-	5,
-	function(value)
-		hitboxSizeX = value
-	end
-)
+    TweenService:Create(
+        flyStroke,
+        opening and flyOpenInfo or flyCloseInfo,
+        {
+            Transparency = strokeTransparency
+        }
+    ):Play()
 
-createSlider(
-	202,
-	"Hitbox Size (Y - Высота)",
-	1,
-	50,
-	5,
-	function(value)
-		hitboxSizeY = value
-	end
-)
+    for _, obj in ipairs(flyFrame:GetDescendants()) do
+        if obj:IsA("TextLabel")
+            or obj:IsA("TextButton")
+            or obj:IsA("TextBox") then
 
-createSlider(
-	244,
-	"Hitbox Size (Z - Глубина)",
-	1,
-	50,
-	5,
-	function(value)
-		hitboxSizeZ = value
-	end
-)
+            TweenService:Create(
+                obj,
+                opening and flyOpenInfo or flyCloseInfo,
+                {
+                    TextTransparency = textTransparency
+                }
+            ):Play()
 
-createSlider(
-	286,
-	"Transparency",
-	0,
-	1,
-	0.5,
-	function(value)
-		hitboxTransparency = value
-	end
-)
+        elseif obj:IsA("UIStroke") then
 
---// =========================================================
---// GLOVES COUNT
---// =========================================================
-
-local countFrame = Instance.new("Frame")
-
-countFrame.Parent = MainFrame
-countFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 40)
-countFrame.BorderSizePixel = 0
-countFrame.Position = UDim2.new(0.5, -92, 0, 328)
-countFrame.Size = UDim2.new(0, 184, 0, 30)
-countFrame.ZIndex = 2
-
-local countCorner = Instance.new("UICorner")
-countCorner.CornerRadius = UDim.new(0, 8)
-countCorner.Parent = countFrame
-
-local countLabel = Instance.new("TextLabel")
-
-countLabel.Parent = countFrame
-countLabel.BackgroundTransparency = 1
-countLabel.Position = UDim2.new(0, 10, 0, 0)
-countLabel.Size = UDim2.new(0.6, 0, 1, 0)
-countLabel.Font = Enum.Font.Gotham
-countLabel.Text = "Кол-во перчаток:"
-countLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
-countLabel.TextSize = 10
-countLabel.TextXAlignment = Enum.TextXAlignment.Left
-countLabel.ZIndex = 3
-
-local countBox = Instance.new("TextBox")
-
-countBox.Parent = countFrame
-countBox.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
-countBox.BorderSizePixel = 0
-countBox.Position = UDim2.new(1, -55, 0.5, -10)
-countBox.Size = UDim2.new(0, 45, 0, 20)
-countBox.Font = Enum.Font.GothamBold
-countBox.Text = "1"
-countBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-countBox.TextSize = 11
-countBox.ClearTextOnFocus = false
-countBox.ZIndex = 3
-
-local boxCorner = Instance.new("UICorner")
-boxCorner.CornerRadius = UDim.new(0, 5)
-boxCorner.Parent = countBox
-
-countBox.FocusLost:Connect(function()
-
-	local number = tonumber(countBox.Text)
-
-	if number then
-
-		glovesCount = math.clamp(
-			math.floor(number),
-			1,
-			20
-		)
-
-		countBox.Text = tostring(glovesCount)
-
-	else
-
-		countBox.Text = tostring(glovesCount)
-
-	end
-end)
-
---// =========================================================
---// ISLAND DROPDOWN
---// =========================================================
-
-local selectedIslandName = "Normal Arena"
-local selectedPosition = Vector3.new(0, 15, 0)
-
-local DropdownToggle = createButton(
-	"Select Island v (Normal Arena)",
-	368,
-	30,
-	Color3.fromRGB(70, 70, 95)
-)
-
-local IslandsContainer = Instance.new("Frame")
-
-IslandsContainer.Parent = MainFrame
-IslandsContainer.BackgroundTransparency = 1
-IslandsContainer.Position = UDim2.new(0.5, -92, 0, 402)
-IslandsContainer.Size = UDim2.new(0, 184, 0, 0)
-IslandsContainer.ClipsDescendants = false
-IslandsContainer.ZIndex = 5
-
-local function createSubButton(name, color)
-
-	local btn = Instance.new("TextButton")
-
-	btn.Name = name
-	btn.Parent = IslandsContainer
-	btn.BackgroundColor3 = color
-	btn.BorderSizePixel = 0
-	btn.Size = UDim2.new(0, 184, 0, 26)
-	btn.Position = UDim2.new(0, 0, 0, 0)
-	btn.ZIndex = 6
-
-	btn:SetAttribute("BaseColor", color)
-
-	btn.Font = Enum.Font.GothamBold
-	btn.Text = name
-	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-	btn.TextSize = 11
-
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 6)
-	corner.Parent = btn
-
-	local glow = applyButtonEffects(
-		btn,
-		color,
-		UDim2.new(0, 184, 0, 26),
-		UDim2.new(0, 192, 0, 29),
-		UDim2.new(0, 176, 0, 23)
-	)
-
-	btn.BackgroundTransparency = 1
-	btn.TextTransparency = 1
-	glow.ImageTransparency = 1
-
-	return btn, glow
+            TweenService:Create(
+                obj,
+                opening and flyOpenInfo or flyCloseInfo,
+                {
+                    Transparency = opening and 0.35 or 1
+                }
+            ):Play()
+        end
+    end
 end
 
-local Island1, Glow1 =
-	createSubButton(
-		"Normal Arena",
-		Color3.fromRGB(80, 80, 110)
-	)
+--=========================================================
+-- FLY MENU OPEN / CLOSE
+--=========================================================
 
-local Island2, Glow2 =
-	createSubButton(
-		"Moai Island",
-		Color3.fromRGB(80, 80, 110)
-	)
+local function closeFlyMenu()
+    bindingFly = false
+    bindingMinimize = false
 
-local Island3, Glow3 =
-	createSubButton(
-		"Slapple Island",
-		Color3.fromRGB(80, 80, 110)
-	)
+    if flying then
+        disableFly()
+    end
 
-local Island4, Glow4 =
-	createSubButton(
-		"Cannon Island",
-		Color3.fromRGB(80, 80, 110)
-	)
+    flyMenuOpen = false
+    flyToggle.Text = "FLY: OFF"
 
-local subItems = {
-		{
-			btn = Island1,
-			glow = Glow1
-		},
-		{
-			btn = Island2,
-			glow = Glow2
-		},
-		{
-			btn = Island3,
-			glow = Glow3
-		},
-		{
-			btn = Island4,
-			glow = Glow4
-		}
-}
+    flyMenuButton.Text = "FLY MENU"
 
---// =========================================================
---// GO + ANTI KB BUTTON
---// =========================================================
+    TweenService:Create(
+        flyMenuButton,
+        TweenInfo.new(
+            0.22,
+            Enum.EasingStyle.Quad,
+            Enum.EasingDirection.Out
+        ),
+        {
+            BackgroundColor3 =
+                Color3.fromRGB(70, 70, 95)
+        }
+    ):Play()
 
-local GoBtn = createButton(
-	"Teleport to Island",
-	404,
-	30,
-	Color3.fromRGB(50, 170, 50)
-)
+    -- Красивое закрытие: уменьшение + уход вниз + fade-out.
+    prepareFlyAnimation(false)
 
-local AntiKBBtn = createButton(
-	"Anti-KB: OFF",
-	444,
-	30,
-	Color3.fromRGB(200, 50, 50)
-)
-
---// =========================================================
---// CLOSE
---// =========================================================
-
-local CloseBtn = Instance.new("TextButton")
-
-CloseBtn.Parent = Title
-CloseBtn.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
-CloseBtn.BorderSizePixel = 0
-CloseBtn.Position = UDim2.new(1, -30, 0.5, -11)
-CloseBtn.Size = UDim2.new(0, 22, 0, 22)
-CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.Text = "×"
-CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseBtn.TextSize = 14
-CloseBtn.ZIndex = 4
-
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 6)
-CloseCorner.Parent = CloseBtn
-
---// =========================================================
---// MINIMIZE
---// =========================================================
-
-local MinimizeBtn = Instance.new("TextButton")
-
-MinimizeBtn.Parent = Title
-MinimizeBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-MinimizeBtn.BorderSizePixel = 0
-MinimizeBtn.Position = UDim2.new(1, -56, 0.5, -11)
-MinimizeBtn.Size = UDim2.new(0, 22, 0, 22)
-MinimizeBtn.Font = Enum.Font.GothamBold
-MinimizeBtn.Text = "-"
-MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinimizeBtn.TextSize = 14
-MinimizeBtn.ZIndex = 4
-
-local MinCorner = Instance.new("UICorner")
-MinCorner.CornerRadius = UDim.new(0, 6)
-MinCorner.Parent = MinimizeBtn
-
---// =========================================================
---// BUTTON COLOR HELPER
---// =========================================================
-
-local function setButtonState(button, text, color)
-
-	button.Text = text
-	button.BackgroundColor3 = color
-	button:SetAttribute("BaseColor", color)
-
-	local glow = button.Parent:FindFirstChild(
-		"NeonGlow_" .. button.Name
-	)
-
-	if glow and glow:IsA("ImageLabel") then
-		glow.ImageColor3 = color
-	end
+    task.delay(0.26, function()
+        if not flyMenuOpen then
+            flyFrame.Visible = false
+        end
+    end)
 end
 
---// =========================================================
---// ISLAND DROPDOWN LOGIC
---// =========================================================
+local function openFlyMenu()
+    flyMenuOpen = true
+    flyMinimized = false
 
-local dropdownOpen = false
+    content.Visible = true
+    minimizeButton.Text = "-"
 
-local function closeDropdown()
+    flyFrame.Size = UDim2.new(0, 230, 0, 202)
 
-	dropdownOpen = false
+    -- Начальное состояние pop-in.
+    flyFrame.Position = flyClosedPosition
+    flyScale.Scale = 0.86
+    flyFrame.BackgroundTransparency = 1
+    flyStroke.Transparency = 1
 
-	DropdownToggle.Text =
-		"Select Island v (" ..
-		selectedIslandName ..
-		")"
+    for _, obj in ipairs(flyFrame:GetDescendants()) do
+        if obj:IsA("TextLabel")
+            or obj:IsA("TextButton")
+            or obj:IsA("TextBox") then
 
-	TweenService:Create(
-		MainFrame,
-		TweenInfo.new(
-			0.2,
-			Enum.EasingStyle.Quad,
-			Enum.EasingDirection.In
-		),
-		{
-			Size = UDim2.new(0, 230, 0, 520)
-		}
-	):Play()
+            obj.TextTransparency = 1
 
-	TweenService:Create(
-		IslandsContainer,
-		TweenInfo.new(
-			0.2,
-			Enum.EasingStyle.Quad,
-			Enum.EasingDirection.In
-		),
-		{
-			Size = UDim2.new(0, 184, 0, 0)
-		}
-	):Play()
+        elseif obj:IsA("UIStroke") then
 
-	TweenService:Create(
-		GoBtn,
-		TweenInfo.new(
-			0.2,
-			Enum.EasingStyle.Quad,
-			Enum.EasingDirection.In
-		),
-		{
-			Position = UDim2.new(
-				0.5,
-				-92,
-				0,
-				404
-			)
-		}
-	):Play()
+            obj.Transparency = 1
+        end
+    end
 
-	TweenService:Create(
-		AntiKBBtn,
-		TweenInfo.new(
-			0.2,
-			Enum.EasingStyle.Quad,
-			Enum.EasingDirection.In
-		),
-		{
-			Position = UDim2.new(
-				0.5,
-				-92,
-				0,
-				444
-			)
-		}
-	):Play()
+    flyFrame.Visible = true
 
-	for _, item in ipairs(subItems) do
+    flyMenuButton.Text = "FLY MENU: ON"
 
-		TweenService:Create(
-			item.btn,
-			TweenInfo.new(
-				0.2,
-				Enum.EasingStyle.Quad,
-				Enum.EasingDirection.In
-			),
-			{
-				BackgroundTransparency = 1,
-				TextTransparency = 1,
-				Position = UDim2.new(
-					0,
-					0,
-					0,
-					0
-				)
-			}
-		):Play()
+    TweenService:Create(
+        flyMenuButton,
+        TweenInfo.new(
+            0.22,
+            Enum.EasingStyle.Quad,
+            Enum.EasingDirection.Out
+        ),
+        {
+            BackgroundColor3 =
+                Color3.fromRGB(40, 70, 48)
+        }
+    ):Play()
 
-		TweenService:Create(
-			item.glow,
-			TweenInfo.new(
-				0.2,
-				Enum.EasingStyle.Quad,
-				Enum.EasingDirection.In
-			),
-			{
-				ImageTransparency = 1
-			}
-		):Play()
-	end
+    -- Красивое появление: pop + fade + движение снизу.
+    prepareFlyAnimation(true)
 end
 
-DropdownToggle.MouseButton1Click:Connect(function()
+flyMenuButton.MouseButton1Click:Connect(function()
+    click()
 
-	if isAnimating or isMinimized then
-		return
-	end
-
-	dropdownOpen = not dropdownOpen
-
-	if dropdownOpen then
-
-		DropdownToggle.Text =
-			"Select Island ^ (" ..
-			selectedIslandName ..
-			")"
-
-		TweenService:Create(
-			MainFrame,
-			TweenInfo.new(
-				0.3,
-				Enum.EasingStyle.Back,
-				Enum.EasingDirection.Out
-			),
-			{
-				Size = UDim2.new(
-					0,
-					230,
-					0,
-					640
-				)
-			}
-		):Play()
-
-		TweenService:Create(
-			IslandsContainer,
-			TweenInfo.new(
-				0.3,
-				Enum.EasingStyle.Back,
-				Enum.EasingDirection.Out
-			),
-			{
-				Size = UDim2.new(
-					0,
-					184,
-					0,
-					120
-				)
-			}
-		):Play()
-
-		TweenService:Create(
-			GoBtn,
-			TweenInfo.new(0.3),
-			{
-				Position = UDim2.new(
-					0.5,
-					-92,
-					0,
-					536
-				)
-			}
-		):Play()
-
-		TweenService:Create(
-			AntiKBBtn,
-			TweenInfo.new(0.3),
-			{
-				Position = UDim2.new(
-					0.5,
-					-92,
-					0,
-					576
-				)
-			}
-		):Play()
-
-		local targetY = {
-			0,
-			30,
-			60,
-			90
-		}
-
-		for i, item in ipairs(subItems) do
-
-			item.btn.Visible = true
-
-			TweenService:Create(
-				item.btn,
-				TweenInfo.new(
-					0.3,
-					Enum.EasingStyle.Back,
-					Enum.EasingDirection.Out
-				),
-				{
-					Position = UDim2.new(
-						0,
-						0,
-						0,
-						targetY[i]
-					),
-					BackgroundTransparency = 0,
-					TextTransparency = 0
-				}
-			):Play()
-
-			TweenService:Create(
-				item.glow,
-				TweenInfo.new(0.3),
-				{
-					ImageTransparency = 0.4
-				}
-			):Play()
-		end
-
-	else
-
-		closeDropdown()
-
-	end
+    if flyMenuOpen then
+        closeFlyMenu()
+    else
+        openFlyMenu()
+    end
 end)
 
-local function selectIsland(name, position)
+--=========================================================
+-- FLY MINIMIZE
+--=========================================================
 
-	selectedIslandName = name
-	selectedPosition = position
+local function toggleFlyMinimize()
+    if not flyMenuOpen then
+        return
+    end
 
-	closeDropdown()
+    click()
+    flyMinimized = not flyMinimized
+
+    if flyMinimized then
+        content.Visible = false
+        minimizeButton.Text = "+"
+
+        TweenService:Create(
+            flyFrame,
+            TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {Size = UDim2.new(0, 230, 0, 34)}
+        ):Play()
+    else
+        content.Visible = true
+        minimizeButton.Text = "-"
+
+        TweenService:Create(
+            flyFrame,
+            TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {Size = UDim2.new(0, 230, 0, 202)}
+        ):Play()
+    end
 end
 
-Island1.MouseButton1Click:Connect(function()
-	selectIsland(
-		"Normal Arena",
-		Vector3.new(0, 15, 0)
-	)
+minimizeButton.MouseButton1Click:Connect(toggleFlyMinimize)
+
+closeButton.MouseButton1Click:Connect(function()
+    click()
+    closeFlyMenu()
 end)
 
-Island2.MouseButton1Click:Connect(function()
-	selectIsland(
-		"Moai Island",
-		Vector3.new(215, 40, 0)
-	)
+--=========================================================
+-- SPEED
+--=========================================================
+
+speedInput.FocusLost:Connect(function()
+    local value = tonumber(speedInput.Text)
+
+    if value then
+        flySpeed = math.clamp(math.floor(value), 1, 500)
+    end
+
+    speedInput.Text = "Speed: " .. tostring(flySpeed)
 end)
 
-Island3.MouseButton1Click:Connect(function()
-	selectIsland(
-		"Slapple Island",
-		Vector3.new(-400, 50, 0)
-	)
+--=========================================================
+-- KEY BINDING
+--=========================================================
+
+flyBindButton.MouseButton1Click:Connect(function()
+    if not flyMenuOpen then return end
+
+    click()
+    bindingFly = true
+    bindingMinimize = false
+    flyBindButton.Text = "Press any key..."
+    flyBindButton.TextColor3 = Color3.fromRGB(255, 200, 100)
 end)
 
-Island4.MouseButton1Click:Connect(function()
-	selectIsland(
-		"Cannon Island",
-		Vector3.new(280, 15, 250)
-	)
+minimizeBindButton.MouseButton1Click:Connect(function()
+    if not flyMenuOpen then return end
+
+    click()
+    bindingMinimize = true
+    bindingFly = false
+    minimizeBindButton.Text = "Press any key..."
+    minimizeBindButton.TextColor3 = Color3.fromRGB(255, 200, 100)
 end)
 
---// =========================================================
---// TELEPORT TO ISLAND
---// =========================================================
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if input.UserInputType ~= Enum.UserInputType.Keyboard then
+        return
+    end
 
-GoBtn.MouseButton1Click:Connect(function()
+    if bindingFly then
+        if input.KeyCode == Enum.KeyCode.Unknown then
+            return
+        end
 
-	local character = player.Character
+        flyKey = input.KeyCode
+        flyBindButton.Text = "Fly Key: [ " .. flyKey.Name .. " ]"
+        flyBindButton.TextColor3 = Color3.fromRGB(220, 220, 230)
+        bindingFly = false
+        click()
+        return
+    end
 
-	if not character then
-		return
-	end
+    if bindingMinimize then
+        if input.KeyCode == Enum.KeyCode.Unknown then
+            return
+        end
 
-	local root =
-		character:FindFirstChild("HumanoidRootPart")
+        minimizeKey = input.KeyCode
+        minimizeBindButton.Text = "Minimize Key: [ " .. minimizeKey.Name .. " ]"
+        minimizeBindButton.TextColor3 = Color3.fromRGB(220, 220, 230)
+        bindingMinimize = false
+        click()
+        return
+    end
 
-	if not root then
-		return
-	end
+    if gameProcessed then
+        return
+    end
 
-	root.CFrame =
-		CFrame.new(selectedPosition)
+    -- IMPORTANT:
+    -- Fly key is completely disabled while Fly Menu is closed.
+    if input.KeyCode == flyKey then
+        if flyMenuOpen then
+            toggleFly()
+        end
+        return
+    end
 
-	root.AssemblyLinearVelocity =
-		Vector3.zero
-
-	root.AssemblyAngularVelocity =
-		Vector3.zero
+    if input.KeyCode == minimizeKey then
+        if flyMenuOpen then
+            toggleFlyMinimize()
+        end
+    end
 end)
 
---// =========================================================
---// MINIMIZE
---// =========================================================
+--=========================================================
+-- DRAG FLY WINDOW
+--=========================================================
 
-MinimizeBtn.MouseButton1Click:Connect(function()
+local dragging = false
+local dragStart
+local startPosition
+local dragInput
 
-	if isAnimating then
-		return
-	end
+topBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
 
-	isMinimized = not isMinimized
+        dragging = true
+        dragStart = input.Position
+        startPosition = flyFrame.Position
 
-	if isMinimized then
-
-		if dropdownOpen then
-			closeDropdown()
-		end
-
-		MinimizeBtn.Text = "+"
-
-		FixCorner.Visible = false
-
-		TweenService:Create(
-			MainFrame,
-			TweenInfo.new(
-				0.3,
-				Enum.EasingStyle.Quad,
-				Enum.EasingDirection.Out
-			),
-			{
-				Size = UDim2.new(
-					0,
-					230,
-					0,
-					38
-				)
-			}
-		):Play()
-
-	else
-
-		MinimizeBtn.Text = "-"
-
-		FixCorner.Visible = true
-
-		TweenService:Create(
-			MainFrame,
-			TweenInfo.new(
-				0.3,
-				Enum.EasingStyle.Quad,
-				Enum.EasingDirection.Out
-			),
-			{
-				Size = UDim2.new(
-					0,
-					230,
-					0,
-					520
-				)
-			}
-		):Play()
-	end
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
 end)
 
---// =========================================================
---// CLOSE GUI
---// =========================================================
-
-CloseBtn.MouseButton1Click:Connect(function()
-
-	if antiVoidConnection then
-		antiVoidConnection:Disconnect()
-	end
-
-	if tpConnection then
-		tpConnection:Disconnect()
-	end
-
-	if hitboxConnection then
-		hitboxConnection:Disconnect()
-	end
-
-	if antiKBConnection then
-		antiKBConnection:Disconnect()
-	end
-
-	if antiKBChildConnection then
-		antiKBChildConnection:Disconnect()
-	end
-
-	if antiKBStateConnection then
-		antiKBStateConnection:Disconnect()
-	end
-
-	if antiKBCharacterConnection then
-		antiKBCharacterConnection:Disconnect()
-	end
-
-	if safePlatform then
-		safePlatform:Destroy()
-	end
-
-	ScreenGui:Destroy()
+topBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
 end)
 
---// =========================================================
---// ANTI-KNOCKBACK
---// =========================================================
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
 
-local function isKnockbackMover(obj)
+        flyFrame.Position = UDim2.new(
+            startPosition.X.Scale,
+            startPosition.X.Offset + delta.X,
+            startPosition.Y.Scale,
+            startPosition.Y.Offset + delta.Y
+        )
+    end
+end)
 
-	return obj:IsA("BodyVelocity")
-		or obj:IsA("BodyPosition")
-		or obj:IsA("BodyThrust")
-		or obj:IsA("BodyAngularVelocity")
-		or obj:IsA("LinearVelocity")
-		or obj:IsA("VectorForce")
-		or obj:IsA("AngularVelocity")
+--=========================================================
+-- FLY MOVEMENT
+--=========================================================
+
+RunService.RenderStepped:Connect(function()
+    if not flying then
+        return
+    end
+
+    -- Safety: closed Fly Menu = Fly OFF.
+    if not flyMenuOpen then
+        disableFly()
+        return
+    end
+
+    if not bodyVelocity or not bodyGyro
+        or not rootPart or not rootPart.Parent then
+        return
+    end
+
+    local camera = workspace.CurrentCamera
+    if not camera then
+        return
+    end
+
+    local moveVector = Vector3.zero
+
+    if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+        moveVector += camera.CFrame.LookVector
+    end
+
+    if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+        moveVector -= camera.CFrame.LookVector
+    end
+
+    if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+        moveVector -= camera.CFrame.RightVector
+    end
+
+    if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+        moveVector += camera.CFrame.RightVector
+    end
+
+    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+        moveVector += Vector3.new(0, 1, 0)
+    end
+
+    if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift)
+        or UserInputService:IsKeyDown(Enum.KeyCode.RightShift) then
+        moveVector -= Vector3.new(0, 1, 0)
+    end
+
+    if moveVector.Magnitude > 0 then
+        moveVector = moveVector.Unit
+    end
+
+    bodyVelocity.Velocity = moveVector * flySpeed
+    bodyGyro.CFrame = camera.CFrame
+end)
+
+--=========================================================
+-- CHARACTER RESET
+--=========================================================
+
+player.CharacterAdded:Connect(function()
+    task.wait(0.2)
+
+    if flying then
+        disableFly()
+    end
+end)
+
+--=========================================================
+-- COMPLETE SHUTDOWN
+--
+-- The original HUB has its own CloseBtn which destroys
+-- SlapBattlesAntiVoidGUI. This watcher catches that event
+-- and shuts down Fly too.
+--=========================================================
+
+local shuttingDown = false
+
+local function shutdownAll()
+    if shuttingDown then
+        return
+    end
+
+    shuttingDown = true
+
+    -- Fly
+    flyMenuOpen = false
+    bindingFly = false
+    bindingMinimize = false
+
+    if flying then
+        disableFly()
+    else
+        if bodyVelocity then
+            bodyVelocity:Destroy()
+            bodyVelocity = nil
+        end
+
+        if bodyGyro then
+            bodyGyro:Destroy()
+            bodyGyro = nil
+        end
+
+        if humanoid then
+            humanoid.PlatformStand = false
+        end
+    end
+
+    -- Original functions:
+    -- We cannot safely access every local from script1,
+    -- so we force the original GUI to disappear, which
+    -- also terminates its GUI-side controls.
+    --
+    -- Anti-Void platform cleanup is handled by the original
+    -- CloseBtn in script1.
+
+    if flyGui and flyGui.Parent then
+        flyGui:Destroy()
+    end
+
+    if clickSound and clickSound.Parent then
+        clickSound:Destroy()
+    end
 end
 
-local function cleanKnockbackMovers(character)
-
-	if not character then
-		return
-	end
-
-	for _, obj in ipairs(character:GetDescendants()) do
-
-		if isKnockbackMover(obj) then
-			obj:Destroy()
-		end
-	end
-end
-
-local function forceNormalHumanoidState(humanoid)
-
-	if not humanoid then
-		return
-	end
-
-	local state = humanoid:GetState()
-
-	if state == Enum.HumanoidStateType.Ragdoll
-		or state == Enum.HumanoidStateType.FallingDown
-		or state == Enum.HumanoidStateType.Physics then
-
-		humanoid:ChangeState(
-			Enum.HumanoidStateType.GettingUp
-		)
-	end
-
-	if humanoid.PlatformStand then
-		humanoid.PlatformStand = false
-	end
-end
-
-local function setupAntiKB(character)
-
-	if not character then
-		return
-	end
-
-	if antiKBChildConnection then
-		antiKBChildConnection:Disconnect()
-		antiKBChildConnection = nil
-	end
-
-	if antiKBStateConnection then
-		antiKBStateConnection:Disconnect()
-		antiKBStateConnection = nil
-	end
-
-	local humanoid =
-		character:FindFirstChildOfClass("Humanoid")
-
-	local root =
-		character:FindFirstChild("HumanoidRootPart")
-
-	if not humanoid or not root then
-		return
-	end
-
-	-- Удаляем существующие силы.
-	cleanKnockbackMovers(character)
-
-	-- Блокируем стандартные состояния.
-	pcall(function()
-
-		humanoid:SetStateEnabled(
-			Enum.HumanoidStateType.Ragdoll,
-			false
-		)
-
-		humanoid:SetStateEnabled(
-			Enum.HumanoidStateType.FallingDown,
-			false
-		)
-
-		humanoid:SetStateEnabled(
-			Enum.HumanoidStateType.Physics,
-			false
-		)
-
-	end)
-
-	forceNormalHumanoidState(humanoid)
-
-	--// Отслеживаем смену состояния.
-	antiKBStateConnection =
-		humanoid.StateChanged:Connect(
-			function(_, newState)
-
-				if not antiKBActive then
-					return
-				end
-
-				if newState ==
-					Enum.HumanoidStateType.Ragdoll
-					or newState ==
-					Enum.HumanoidStateType.FallingDown
-					or newState ==
-					Enum.HumanoidStateType.Physics then
-
-					task.defer(function()
-
-						if humanoid
-							and humanoid.Parent
-							and antiKBActive then
-
-							forceNormalHumanoidState(
-								humanoid
-							)
-						end
-					end)
-				end
-			end
-		)
-
-	--// Удаляем новые knockback-объекты.
-	antiKBChildConnection =
-		character.DescendantAdded:Connect(
-			function(obj)
-
-				if not antiKBActive then
-					return
-				end
-
-				if isKnockbackMover(obj) then
-
-					task.defer(function()
-
-						if obj
-							and obj.Parent
-							and antiKBActive then
-
-							obj:Destroy()
-						end
-					end)
-				end
-			end
-		)
-end
-
-local function enableAntiKB()
-
-	antiKBActive = true
-
-	local character = player.Character
-
-	if character then
-		setupAntiKB(character)
-	end
-
-	if antiKBConnection then
-		antiKBConnection:Disconnect()
-	end
-
-	--// RenderStepped используется для максимально
-	--// быстрой коррекции горизонтального knockback.
-	antiKBConnection =
-		RunService.RenderStepped:Connect(function()
-
-			if not antiKBActive then
-				return
-			end
-
-			local currentCharacter =
-				player.Character
-
-			if not currentCharacter then
-				return
-			end
-
-			local humanoid =
-				currentCharacter:FindFirstChildOfClass(
-					"Humanoid"
-				)
-
-			local root =
-				currentCharacter:FindFirstChild(
-					"HumanoidRootPart"
-				)
-
-			if not humanoid or not root then
-				return
-			end
-
-			-- Удаляем физические силы.
-			cleanKnockbackMovers(
-				currentCharacter
-			)
-
-			-- Блокируем ragdoll.
-			forceNormalHumanoidState(
-				humanoid
-			)
-
-			-- Берём ТЕКУЩУЮ скорость Humanoid.
-			-- Поэтому если у игрока WalkSpeed = 16,
-			-- он остаётся 16. Если админ установил 20,
-			-- остаётся 20.
-			local walkSpeed =
-				humanoid.WalkSpeed
-
-			local moveDirection =
-				humanoid.MoveDirection
-
-			-- Сохраняем вертикальную физику,
-			-- чтобы прыжок продолжал работать.
-			local currentVelocity =
-				root.AssemblyLinearVelocity
-
-			local horizontalVelocity =
-				moveDirection * walkSpeed
-
-			root.AssemblyLinearVelocity =
-				Vector3.new(
-					horizontalVelocity.X,
-					currentVelocity.Y,
-					horizontalVelocity.Z
-				)
-
-			-- Удар больше не может раскрутить персонажа.
-			root.AssemblyAngularVelocity =
-				Vector3.zero
-		end)
-end
-
-local function disableAntiKB()
-
-	antiKBActive = false
-
-	if antiKBConnection then
-		antiKBConnection:Disconnect()
-		antiKBConnection = nil
-	end
-
-	if antiKBChildConnection then
-		antiKBChildConnection:Disconnect()
-		antiKBChildConnection = nil
-	end
-
-	if antiKBStateConnection then
-		antiKBStateConnection:Disconnect()
-		antiKBStateConnection = nil
-	end
-
-	local character = player.Character
-
-	if character then
-
-		local humanoid =
-			character:FindFirstChildOfClass(
-				"Humanoid"
-			)
-
-		if humanoid then
-
-			pcall(function()
-
-				humanoid:SetStateEnabled(
-					Enum.HumanoidStateType.Ragdoll,
-					true
-				)
-
-				humanoid:SetStateEnabled(
-					Enum.HumanoidStateType.FallingDown,
-					true
-				)
-
-				humanoid:SetStateEnabled(
-					Enum.HumanoidStateType.Physics,
-					true
-				)
-
-			end)
-		end
-	end
-end
-
---// =========================================================
---// ANTI KB BUTTON
---// =========================================================
-
-AntiKBBtn.MouseButton1Click:Connect(function()
-
-	antiKBActive = not antiKBActive
-
-	if antiKBActive then
-
-		setButtonState(
-			AntiKBBtn,
-			"Anti-KB: ON",
-			Color3.fromRGB(45, 180, 45)
-		)
-
-		enableAntiKB()
-
-	else
-
-		setButtonState(
-			AntiKBBtn,
-			"Anti-KB: OFF",
-			Color3.fromRGB(200, 50, 50)
-		)
-
-		disableAntiKB()
-	end
+mainGui.Destroying:Connect(shutdownAll)
+
+mainGui.AncestryChanged:Connect(function(_, parent)
+    if not parent then
+        shutdownAll()
+    end
 end)
 
---// =========================================================
---// RESPAWN ANTI-KB
---// =========================================================
-
-antiKBCharacterConnection =
-	player.CharacterAdded:Connect(function(character)
-
-		if not antiKBActive then
-			return
-		end
-
-		task.wait(0.15)
-
-		if antiKBActive then
-			setupAntiKB(character)
-		end
-	end)
-
---// =========================================================
---// ANTI-VOID
---// =========================================================
-
-local function getOrCreatePlatform()
-
-	if safePlatform
-		and safePlatform.Parent then
-
-		return safePlatform
-	end
-
-	safePlatform = Instance.new("Part")
-
-	safePlatform.Name =
-		"AntiVoidPlatform"
-
-	safePlatform.Size =
-		Vector3.new(
-			2048,
-			10,
-			2048
-		)
-
-	safePlatform.Position =
-		Vector3.new(
-			0,
-			-15,
-			0
-		)
-
-	safePlatform.Anchored = true
-	safePlatform.Transparency = 0.7
-	safePlatform.CanCollide = false
-
-	safePlatform.Parent = Workspace
-
-	return safePlatform
-end
-
-ToggleBtn.MouseButton1Click:Connect(function()
-
-	antiVoidActive = not antiVoidActive
-
-	if antiVoidActive then
-
-		setButtonState(
-			ToggleBtn,
-			"Anti-Void: ON",
-			Color3.fromRGB(45, 180, 45)
-		)
-
-		local platform =
-			getOrCreatePlatform()
-
-		platform.CanCollide = true
-
-		if antiVoidConnection then
-			antiVoidConnection:Disconnect()
-		end
-
-		antiVoidConnection =
-			RunService.Heartbeat:Connect(
-				function()
-
-					local character =
-						player.Character
-
-					if not character then
-						return
-					end
-
-					local root =
-						character:FindFirstChild(
-							"HumanoidRootPart"
-						)
-
-					if not root then
-						return
-					end
-
-					if root.Position.Y < -30 then
-
-						root.CFrame =
-							CFrame.new(
-								0,
-								15,
-								0
-							)
-
-						root.AssemblyLinearVelocity =
-							Vector3.zero
-
-						root.AssemblyAngularVelocity =
-							Vector3.zero
-					end
-				end
-			)
-
-	else
-
-		setButtonState(
-			ToggleBtn,
-			"Anti-Void: OFF",
-			Color3.fromRGB(200, 50, 50)
-		)
-
-		if antiVoidConnection then
-			antiVoidConnection:Disconnect()
-			antiVoidConnection = nil
-		end
-
-		if safePlatform then
-			safePlatform:Destroy()
-			safePlatform = nil
-		end
-	end
-end)
-
---// =========================================================
---// CLICK TP
---// =========================================================
-
-TpBtn.MouseButton1Click:Connect(function()
-
-	tpActive = not tpActive
-
-	if tpActive then
-
-		setButtonState(
-			TpBtn,
-			"Click-TP: ON",
-			Color3.fromRGB(45, 180, 45)
-		)
-
-		if tpConnection then
-			tpConnection:Disconnect()
-		end
-
-		tpConnection =
-			mouse.Button1Down:Connect(function()
-
-				local isMobile =
-					UserInputService.TouchEnabled
-					and not UserInputService.KeyboardEnabled
-
-				local ctrl =
-					UserInputService:IsKeyDown(
-						Enum.KeyCode.LeftControl
-					)
-					or UserInputService:IsKeyDown(
-						Enum.KeyCode.RightControl
-					)
-
-				if isMobile or ctrl then
-
-					if not mouse.Target then
-						return
-					end
-
-					local character =
-						player.Character
-
-					if not character then
-						return
-					end
-
-					local root =
-						character:FindFirstChild(
-							"HumanoidRootPart"
-						)
-
-					if not root then
-						return
-					end
-
-					root.CFrame =
-						CFrame.new(
-							mouse.Hit.Position
-								+ Vector3.new(
-									0,
-									3,
-									0
-								)
-						)
-				end
-			end)
-
-	else
-
-		setButtonState(
-			TpBtn,
-			"Click-TP: OFF",
-			Color3.fromRGB(50, 130, 220)
-		)
-
-		if tpConnection then
-			tpConnection:Disconnect()
-			tpConnection = nil
-		end
-	end
-end)
-
---// =========================================================
---// GLOVE HITBOX
---// =========================================================
-
-local originalPartData = {}
-
-local function restoreHitboxes()
-
-	for part, data in pairs(originalPartData) do
-
-		if part and part.Parent then
-
-			part.Size =
-				data.Size
-
-			part.Transparency =
-				data.Transparency
-
-			part.CanCollide =
-				data.CanCollide
-
-			part.Massless =
-				data.Massless
-		end
-	end
-
-	originalPartData = {}
-end
-
-HitboxToggle.MouseButton1Click:Connect(function()
-
-	hitboxActive = not hitboxActive
-
-	if hitboxActive then
-
-		setButtonState(
-			HitboxToggle,
-			"Glove Hitbox: ON",
-			Color3.fromRGB(45, 180, 45)
-		)
-
-		originalPartData = {}
-
-		if hitboxConnection then
-			hitboxConnection:Disconnect()
-		end
-
-		hitboxConnection =
-			RunService.RenderStepped:Connect(
-				function()
-
-					local character =
-						player.Character
-
-					if not character then
-						return
-					end
-
-					for _, part in ipairs(
-						character:GetDescendants()
-					) do
-
-						if part:IsA("BasePart")
-							and (
-								part.Name == "Handle"
-								or part.Name == "Glove"
-								or part.Name == "RightHand"
-							) then
-
-							if not originalPartData[part] then
-
-								originalPartData[part] = {
-
-									Size = part.Size,
-
-									Transparency =
-										part.Transparency,
-
-									CanCollide =
-										part.CanCollide,
-
-									Massless =
-										part.Massless
-								}
-							end
-
-							local divisor =
-								math.max(
-									1,
-									glovesCount
-								)
-
-							part.Size =
-								Vector3.new(
-									hitboxSizeX / divisor,
-									hitboxSizeY / divisor,
-									hitboxSizeZ / divisor
-								)
-
-							part.Transparency =
-								hitboxTransparency
-
-							part.CanCollide = false
-							part.Massless = true
-						end
-					end
-				end
-			)
-
-	else
-
-		setButtonState(
-			HitboxToggle,
-			"Glove Hitbox: OFF",
-			Color3.fromRGB(200, 50, 50)
-		)
-
-		if hitboxConnection then
-			hitboxConnection:Disconnect()
-			hitboxConnection = nil
-		end
-
-		restoreHitboxes()
-	end
-end)
-
---// =========================================================
---// LOADING ANIMATION
---// =========================================================
-
-TweenService:Create(
-	LoadingFrame,
-	TweenInfo.new(
-		0.4,
-		Enum.EasingStyle.Quad,
-		Enum.EasingDirection.Out
-	),
-	{
-		BackgroundTransparency = 0.1
-	}
-):Play()
-
-TweenService:Create(
-	LoadingTitle,
-	TweenInfo.new(0.4),
-	{
-		TextTransparency = 0
-	}
-):Play()
-
-TweenService:Create(
-	LoadingSub,
-	TweenInfo.new(0.4),
-	{
-		TextTransparency = 0
-	}
-):Play()
-
-TweenService:Create(
-	BarBackground,
-	TweenInfo.new(0.4),
-	{
-		BackgroundTransparency = 0
-	}
-):Play()
-
-task.delay(0.3, function()
-
-	TweenService:Create(
-		BarFill,
-		TweenInfo.new(
-			0.6,
-			Enum.EasingStyle.Quint,
-			Enum.EasingDirection.Out
-		),
-		{
-			Size = UDim2.new(
-				0.6,
-				0,
-				1,
-				0
-			)
-		}
-	):Play()
-
-	LoadingSub.Text =
-		"Подключение модулей..."
-end)
-
-task.delay(1.0, function()
-
-	TweenService:Create(
-		BarFill,
-		TweenInfo.new(
-			0.5,
-			Enum.EasingStyle.Quint,
-			Enum.EasingDirection.Out
-		),
-		{
-			Size = UDim2.new(
-				1,
-				0,
-				1,
-				0
-			)
-		}
-	):Play()
-
-	LoadingSub.Text =
-		"Готово!"
-end)
-
-task.delay(1.6, function()
-
-	TweenService:Create(
-		LoadingFrame,
-		TweenInfo.new(0.3),
-		{
-			BackgroundTransparency = 1
-		}
-	):Play()
-
-	TweenService:Create(
-		LoadingTitle,
-		TweenInfo.new(0.3),
-		{
-			TextTransparency = 1
-		}
-	):Play()
-
-	TweenService:Create(
-		LoadingSub,
-		TweenInfo.new(0.3),
-		{
-			TextTransparency = 1
-		}
-	):Play()
-
-	TweenService:Create(
-		BarBackground,
-		TweenInfo.new(0.3),
-		{
-			BackgroundTransparency = 1
-		}
-	):Play()
-
-	TweenService:Create(
-		BarFill,
-		TweenInfo.new(0.3),
-		{
-			BackgroundTransparency = 1
-		}
-	):Play()
-
-	task.wait(0.3)
-
-	if LoadingFrame then
-		LoadingFrame:Destroy()
-	end
-
-	MainFrame.Visible = true
-
-	TweenService:Create(
-		MainFrame,
-		TweenInfo.new(
-			0.4,
-			Enum.EasingStyle.Back,
-			Enum.EasingDirection.Out
-		),
-		{
-			BackgroundTransparency = 0
-		}
-	):Play()
-end)
+--=========================================================
+-- INITIAL STATE
+--=========================================================
+
+flyFrame.Visible = false
+flyMenuOpen = false
+flying = false
+
+print("[SLAP HUB] Fixed Hub + Fly Menu loaded")
